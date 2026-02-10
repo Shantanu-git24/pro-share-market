@@ -6,7 +6,6 @@ import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useFonts, Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold } from '@expo-google-fonts/manrope';
 import DashboardScreen from './screens/DashboardScreen';
 import HeatmapScreen from './screens/HeatmapScreen';
@@ -16,6 +15,7 @@ import ProfileScreen from './screens/ProfileScreen';
 import StockDetailScreen from './screens/StockDetailScreen';
 import WatchlistScreen from './screens/WatchlistScreen';
 import AnalyticsScreen from './screens/AnalyticsScreen';
+import BottomNav from './components/BottomNav';
 
 Text.defaultProps = Text.defaultProps || {};
 Text.defaultProps.style = [{ fontFamily: 'Manrope_400Regular' }, Text.defaultProps.style];
@@ -39,32 +39,20 @@ const AppTheme = {
 function MainTabs() {
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
+      screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#0a0a14',
-          borderTopColor: 'rgba(255,255,255,0.08)',
-          height: 64,
-          paddingBottom: 10,
-          paddingTop: 8
-        },
-        tabBarActiveTintColor: '#1111d4',
-        tabBarInactiveTintColor: '#7f86a3',
-        tabBarLabelStyle: {
-          fontSize: 10,
-          fontFamily: 'Manrope_700Bold'
-        },
-        tabBarIcon: ({ color, size }) => {
-          const iconMap = {
-            Dashboard: 'dashboard',
-            Heatmap: 'grid-on',
-            News: 'article',
-            Portfolio: 'account-balance-wallet',
-            Profile: 'settings'
-          };
-          return <MaterialIcons name={iconMap[route.name]} size={size} color={color} />;
+          backgroundColor: 'transparent',
+          borderTopWidth: 0,
+          position: 'absolute'
         }
-      })}
+      }}
+      tabBar={({ state, navigation }) => (
+        <BottomNav
+          activeTab={state.routes[state.index].name}
+          onChange={(tabId) => navigation.navigate(tabId)}
+        />
+      )}
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen name="Heatmap" component={HeatmapScreen} />

@@ -6,7 +6,7 @@ export const COLORS = {
   danger: '#ff4d4d',
   bgDark: '#0a0a14',
   cardDark: '#161633',
-  muted: '#8b93a7'
+  muted: '#c2cbe3'
 };
 
 export const spacing = {
@@ -91,25 +91,71 @@ export const styles = StyleSheet.create({
   },
   bottomNav: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.08)',
-    backgroundColor: 'rgba(10, 10, 20, 0.98)'
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.lg,
+    paddingVertical: 6,
+    paddingHorizontal: spacing.sm,
+    borderRadius: 32,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+    backgroundColor: 'rgba(255,255,255,0.45)',
+    shadowColor: '#000000',
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+    overflow: 'hidden'
   },
   navItem: {
+    flex: 1,
     alignItems: 'center',
-    gap: 4
+    gap: 4,
+    position: 'relative'
+  },
+  navItemActive: {
+    transform: [{ translateY: -6 }]
+  },
+  navIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)'
+  },
+  navIconWrapActive: {
+    backgroundColor: COLORS.primary,
+    shadowColor: COLORS.primary,
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 10
+  },
+  navActiveHalo: {
+    position: 'absolute',
+    top: -6,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(17, 17, 212, 0.18)'
+  },
+  navActiveDot: {
+    width: 18,
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: COLORS.accent
   },
   navLabel: {
-    fontSize: 10,
+    fontSize: 9,
+    letterSpacing: 0.4,
     fontWeight: '700',
     fontFamily: 'SpaceGrotesk_600SemiBold',
-    color: COLORS.muted
+    color: 'white',
   },
   navLabelActive: {
-    color: COLORS.primary
+    color: 'black'
   },
   loginContainer: {
     flex: 1,
