@@ -1,233 +1,290 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, TextInput, StyleSheet, Image } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Path, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Screen from '../components/Screen';
 
 const COLORS = {
-  primary: '#1111d4',
-  accent: '#0bda68',
-  background: '#0a0a14',
-  surface: '#1a1a2e',
-  muted: '#9292c9',
-  light: '#f6f6f8'
+  primary: '#13ecec',
+  background: '#0a1414',
+  card: '#162a2a',
+  gold: '#d4af37',
+  success: '#39ff14',
+  danger: '#ef4444',
+  text: '#ffffff',
+  muted: 'rgba(255,255,255,0.6)',
+  border: 'rgba(19,236,236,0.12)'
 };
 
-const tickerItems = [
-  'S&P 500 5,204.34 (+0.45%)',
-  'NASDAQ 16,274.94 (+1.23%)',
-  'DOW 38,904.04 (-0.12%)',
-  'BTC $64,231.20 (+3.1%)',
-  'AAPL $189.42 (+1.24%)'
+const indices = [
+  { label: 'NIFTY 50', value: '22,038.40', change: '+184.20 (0.84%)', up: true },
+  { label: 'SENSEX', value: '72,540.30', change: '+560.15 (0.78%)', up: true },
+  { label: 'BANK NIFTY', value: '47,215.10', change: '-112.45 (0.24%)', up: false }
 ];
 
-const watchlist = [
-  { symbol: 'TSLA', name: 'Tesla, Inc.', price: 171.05, change: -2.44 },
-  { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 875.28, change: 4.12 },
-  { symbol: 'BTC', name: 'Bitcoin', price: 64231, change: 1.89 }
+const topGainers = [
+  {
+    symbol: 'RELIANCE',
+    name: 'Reliance Industries Ltd',
+    price: '2,945.30',
+    change: '+4.25%',
+    logo: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCtJ_u_H-QT7yehl7yeVXiGZ54-iAu7NH8jH9QZcFeMPAxEeet5CVmcA5R2zieUpSE_hsv2a6ubXF9NwU0nzcUKy97HXfWI9WGyK8J5ghSHcHWAd-3nBG2ygvCk5jDNtHkIQYkSAbgsUG_afOjnSlbPExJuSoyeO2W58_kkHk31fGohsD4PxGXpK3LtBPk7JtI2vMTC_RsyNVno2AGSQlAEjwYdL_GVwyN1krsczhWbaskI8PAFQYbp3rpioiFqm3FsI8UdYVAwjUs'
+  },
+  {
+    symbol: 'HDFCBANK',
+    name: 'HDFC Bank Limited',
+    price: '1,442.10',
+    change: '+3.80%',
+    logo: 'https://lh3.googleusercontent.com/aida-public/AB6AXuADuEXx08EzfQCkbDAjoVBJx65qJJQfOguvNXMOs4EzgqvfMaZsCU6t8dqvpQUnU6Ncag5ozeOO_xSIq5MhZ15PQO6Sy3yi1LLH4mS315L_3fAuYAGkL9cCxRf5xPn320ChylxG1gWWscm3SXAtziXtsopvhhreopZBC1niCghHKVNH4DDTut2Budyhau-9nuoi5rzok8fzzlQhXJZI4lHwALrCPGT40YT_9AHrH1mfqAbMmXK-Lzu-gq1TgzbEK1K0lpu3NFscbMY'
+  },
+  {
+    symbol: 'TCS',
+    name: 'Tata Consultancy Services',
+    price: '3,912.45',
+    change: '+2.15%',
+    logo: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB92O_jx1kTyDvVIPBhTxtQyu3oaeaovokYAUoipohH4jmL1bcfHaBQp-XQZJc0gpnxpcTifAGaacZ3WGAQnZWxB5WSHf8vQ1neo8x6KkzIfLpEqk5P26x9u79LnQQxN3nXWn_WsXrUUOsrG-k_KRVmymzDc88Ez6-3ynz8AlUf9x2qgjbGiZZGqkQ2wzU8NNkLjupJxACQST7rXoNL83U8m0p75c2bBOOoYY6geVH4iVtzV4hZD-pzFuhHh8L9yRfpgZfNMIdpcuY'
+  }
 ];
+
+const metals = [
+  {
+    label: 'Gold 24K',
+    value: '₹62,450',
+    unit: 'Per 10 Grams',
+    change: '+0.42%',
+    up: true,
+    accent: COLORS.gold,
+    icon: 'stars'
+  },
+  {
+    label: 'Silver',
+    value: '₹71,200',
+    unit: 'Per 1 Kilogram',
+    change: '-0.15%',
+    up: false,
+    accent: '#94a3b8',
+    icon: 'diamond'
+  }
+];
+
+const funds = [
+  {
+    code: 'SBI',
+    name: 'SBI Bluechip Fund',
+    meta: 'Direct Growth • 4.8★',
+    change: '22.4%',
+    period: '3Y CAGR',
+    color: '#2563eb'
+  },
+  {
+    code: 'AXS',
+    name: 'Axis Small Cap Fund',
+    meta: 'Direct Growth • 4.9★',
+    change: '28.1%',
+    period: '3Y CAGR',
+    color: '#dc2626'
+  }
+];
+
+const segments = ['Stocks', 'MFs', 'Metals', 'Indices'];
 
 export default function DashboardScreen() {
   const navigation = useNavigation();
-  const [isDark, setIsDark] = useState(true);
-
-  const theme = isDark
-    ? {
-      background: '#0a0a14',
-      surface: '#1a1a2e',
-      text: '#ffffff',
-      subtext: '#9da5bd',
-      muted: '#9292c9',
-      border: 'rgba(255,255,255,0.08)',
-      glass: 'rgba(255,255,255,0.08)',
-      chip: 'rgba(255,255,255,0.08)'
-    }
-    : {
-      background: '#f6f6f8',
-      surface: '#ffffff',
-      text: '#0b0b14',
-      subtext: '#6b7280',
-      muted: '#6b7280',
-      border: '#e5e7eb',
-      glass: '#ffffff',
-      chip: '#e5e7eb'
-    };
-
-  const iconColor = isDark ? 'white' : '#0b0b14';
-  const toggleIcon = isDark ? 'nightlight-round' : 'wb-sunny';
-  const gradientColors = isDark ? [COLORS.primary, '#050520'] : ['#e0e7ff', '#c7d2fe'];
+  const [activeSegment, setActiveSegment] = useState('Stocks');
 
   return (
-    <Screen style={[styles.root, { backgroundColor: theme.background }]}>
+    <Screen style={styles.root}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <View style={[styles.tickerWrap, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tickerRow}>
-            {tickerItems.concat(tickerItems).map((item, index) => (
-              <Text key={`${item}-${index}`} style={[styles.tickerText, { color: theme.subtext }]}>
-                {item}
-              </Text>
-            ))}
-          </ScrollView>
-        </View>
-
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Pressable style={[styles.menuButton, { backgroundColor: isDark ? 'rgba(17,17,212,0.2)' : '#e5e7eb' }]}>
-              <MaterialIcons name="menu" size={20} color={iconColor} />
-            </Pressable>
-            <Text style={[styles.headerTitle, { color: theme.text }]}>ProTrader</Text>
-          </View>
-          <View style={styles.headerRight}>
-            <Pressable
-              style={[styles.toggleShell, { backgroundColor: theme.chip, borderColor: theme.border }]}
-              onPress={() => setIsDark((prev) => !prev)}
-            >
-              <View style={[styles.toggleThumb, { alignSelf: isDark ? 'flex-start' : 'flex-end', backgroundColor: isDark ? '#ffffff' : '#0b0b14' }]}
-              >
-                <MaterialIcons name={toggleIcon} size={14} color={isDark ? '#0b0b14' : '#f59e0b'} />
-              </View>
-            </Pressable>
-            <Pressable style={[styles.iconButton, { backgroundColor: theme.glass }]}
-            >
-              <MaterialIcons name="notifications" size={18} color={iconColor} />
-            </Pressable>
-            <Image
-              source={{ uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBirObAa2MjIWPa-3boALnjbdRJaqIm4RdAgYiDEC9g-kR1zaGa7RMBrNTVp4vqykvIPv-wmHATAXI9LL3ZWts3jiQuqk5_mu5NvcbEsFonXs_d3nxKrgjHIM4g-1hqa3IHWby7WBs8RqprHFfG_oa6kLdouCbZnUsA6DIa6Ji0Qp_HqmIxRpEbQHmtgNzO39fFVi4GRagnh1oWuWnPb--ViM4PwXZXGa11gNrdjyInHRpZzBi3Ym-QM27gHLO5DEK6awQFi5kKzh8' }}
-              style={styles.avatar}
-            />
-          </View>
-        </View>
-
-        <View style={[styles.searchWrap, { backgroundColor: theme.glass, borderColor: theme.border }]}
-        >
-          <MaterialIcons name="search" size={18} color={theme.muted} />
-          <TextInput
-            placeholder="Search AAPL, TSLA, BTC..."
-            placeholderTextColor={theme.muted}
-            style={[styles.searchInput, { color: theme.text }]}
-          />
-        </View>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cardRow}>
-          <LinearGradient colors={gradientColors} style={styles.balanceCard}>
-            <View style={styles.cardHeader}>
-              <Text style={[styles.cardLabel, { color: isDark ? 'rgba(255,255,255,0.7)' : '#475569' }]}>Total Balance</Text>
-              <MaterialIcons name="account-balance-wallet" size={16} color="rgba(255,255,255,0.4)" />
+            <View style={styles.headerIcon}>
+              <MaterialIcons name="account-balance-wallet" size={18} color={COLORS.primary} />
             </View>
-            <Text style={[styles.cardValue, { color: isDark ? 'white' : '#0b0b14' }]}>$42,950.00</Text>
-            <View style={styles.cardDelta}>
-              <MaterialIcons name="trending-up" size={14} color={COLORS.accent} />
-              <Text style={[styles.cardDeltaText, { color: COLORS.accent }]}>+5.2% <Text style={[styles.cardDeltaMuted, { color: isDark ? 'rgba(255,255,255,0.5)' : '#64748b' }]}>today</Text></Text>
-            </View>
-          </LinearGradient>
-          <View style={[styles.glassCard, { backgroundColor: theme.glass, borderColor: theme.border }]}>
-            <View style={styles.cardHeader}>
-              <Text style={[styles.cardLabel, { color: theme.subtext }]}>Profit / Loss</Text>
-              <MaterialIcons name="payments" size={16} color="rgba(255,255,255,0.4)" />
-            </View>
-            <Text style={[styles.cardValue, { color: theme.text }]}>+$1,240.50</Text>
-            <View style={styles.cardDelta}>
-              <MaterialIcons name="north-east" size={14} color={COLORS.accent} />
-              <Text style={[styles.cardDeltaText, { color: COLORS.accent }]}>+2.1% <Text style={[styles.cardDeltaMuted, { color: isDark ? 'rgba(255,255,255,0.5)' : '#64748b' }]}>all time</Text></Text>
-            </View>
-          </View>
-        </ScrollView>
-
-        <View style={[styles.chartCard, { backgroundColor: theme.glass, borderColor: theme.border }]}>
-          <View style={styles.chartHeader}>
             <View>
-              <View style={styles.tickerRowMini}>
-                <View style={styles.logoDot}>
-                  <Image
-                    source={{ uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDYjlzDp0gfGXY_8sNzjVwgacSobRqHmEfJ2sAH9wpk-5-AH3KSxuN0lkzoywJyvt0vgG8VuUJ2Ma1rRcWZjh1MqvDIpTzMXv_H-K-NN1DOn1H2EpBzPYyWePRFAGBR0aQ2QmOP_AiWFl4T38mVVQqVVwa8qFAI_86_9x5XHLqZXLr9d1jjvy6yB_hzCYb85ch8NJokNztPHXeRzwY4JX6L7cM4TMPX43VfnWEpQECf_PwQiVQ3xG6PYy77OErsM-9efwdOoTSGziM' }}
-                    style={styles.logoImg}
-                  />
-                </View>
-                <Text style={[styles.tickerLabel, { color: theme.subtext }]}>AAPL - Apple Inc.</Text>
-              </View>
-              <Text style={[styles.chartPrice, { color: theme.text }]}>$189.42</Text>
-            </View>
-            <View style={styles.chartRight}>
-              <Text style={[styles.chartChange, { color: COLORS.accent }]}>+1.24%</Text>
-              <Text style={[styles.chartRealTime, { color: isDark ? 'rgba(255,255,255,0.4)' : '#64748b' }]}>REAL-TIME</Text>
+              <Text style={styles.headerLabel}>Invested Value</Text>
+              <Text style={styles.headerValue}>₹14,82,450.00</Text>
             </View>
           </View>
-          <View style={[styles.rangeRow, { backgroundColor: theme.chip }]}>
-            {['1D', '1W', '1M', '1Y', 'ALL'].map((label, index) => (
-              <Pressable key={label} style={[styles.rangeChip, index === 0 && styles.rangeChipActive]}>
-                <Text style={[styles.rangeText, { color: index === 0 ? 'white' : theme.subtext }]}>{label}</Text>
-              </Pressable>
-            ))}
-          </View>
-          <View style={styles.chartWrap}>
-            <Svg width="100%" height="100%" viewBox="0 0 478 150" preserveAspectRatio="none">
-              <Defs>
-                <SvgGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0" stopColor={COLORS.primary} stopOpacity="0.4" />
-                  <Stop offset="1" stopColor={COLORS.primary} stopOpacity="0" />
-                </SvgGradient>
-              </Defs>
-              <Path
-                d="M0 109C18 109 18 21 36 21C54 21 54 41 72 41C90 41 90 93 108 93C127 93 127 33 145 33C163 33 163 101 181 101C199 101 199 61 217 61C236 61 236 45 254 45C272 45 272 121 290 121C308 121 308 149 326 149C344 149 344 1 363 1C381 1 381 81 399 81C417 81 417 129 435 129C453 129 453 25 472 25V149H0V109Z"
-                fill="url(#chartGradient)"
-              />
-              <Path
-                d="M0 109C18 109 18 21 36 21C54 21 54 41 72 41C90 41 90 93 108 93C127 93 127 33 145 33C163 33 163 101 181 101C199 101 199 61 217 61C236 61 236 45 254 45C272 45 272 121 290 121C308 121 308 149 326 149C344 149 344 1 363 1C381 1 381 81 399 81C417 81 417 129 435 129C453 129 453 25 472 25"
-                stroke="#00d4ff"
-                strokeWidth="3"
-                strokeLinecap="round"
-                fill="none"
-              />
-            </Svg>
-          </View>
-          <View style={styles.chartTimes}>
-            {['09:30 AM', '11:30 AM', '01:30 PM', '03:30 PM'].map((time) => (
-              <Text key={time} style={styles.chartTimeText}>{time}</Text>
-            ))}
+          <View style={styles.headerActions}>
+            <Pressable style={styles.headerButton}>
+              <MaterialIcons name="search" size={18} color={COLORS.primary} />
+            </Pressable>
+            <Pressable style={styles.headerButton}>
+              <MaterialIcons name="notifications" size={18} color={COLORS.primary} />
+              <View style={styles.notificationDot} />
+            </Pressable>
           </View>
         </View>
 
-        <View style={styles.actionRow}>
-          <Pressable style={styles.buyButton}>
-            <Text style={styles.buyText}>BUY AAPL</Text>
-          </Pressable>
-          <Pressable style={[styles.sellButton, { backgroundColor: theme.glass, borderColor: theme.border }]}>
-            <Text style={[styles.sellText, { color: theme.text }]}>SELL AAPL</Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.watchHeader}>
-          <Text style={[styles.watchTitle, { color: theme.text }]}>Watchlist</Text>
-          <Pressable onPress={() => navigation.navigate('Watchlist')}>
-            <Text style={styles.watchAction}>View All</Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.watchList}>
-          {watchlist.map((item) => (
-            <Pressable
-              key={item.symbol}
-              style={[styles.watchItem, { backgroundColor: theme.glass }]}
-              onPress={() => navigation.navigate('StockDetail', { symbol: item.symbol })}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tickerRow}
+        >
+          {indices.map((item) => (
+            <View
+              key={item.label}
+              style={[
+                styles.tickerCard,
+                { borderLeftColor: item.up ? COLORS.success : COLORS.danger }
+              ]}
             >
-              <View style={styles.watchLeft}>
-                <View style={styles.watchBadge}>
-                  <Text style={styles.watchBadgeText}>{item.symbol}</Text>
-                </View>
-                <View>
-                  <Text style={[styles.watchName, { color: theme.text }]}>{item.name}</Text>
-                  <Text style={[styles.watchShares, { color: isDark ? 'rgba(255,255,255,0.4)' : '#64748b' }]}>182.34 Shares</Text>
-                </View>
-              </View>
-              <View style={styles.watchRight}>
-                <Text style={[styles.watchPrice, { color: theme.text }]}>${item.price.toLocaleString()}</Text>
-                <Text style={[styles.watchChange, item.change >= 0 ? styles.changeUp : styles.changeDown]}>
-                  {item.change >= 0 ? '+' : ''}{item.change}%
+              <Text style={styles.tickerLabel}>{item.label}</Text>
+              <Text style={styles.tickerValue}>{item.value}</Text>
+              <View style={styles.tickerChangeRow}>
+                <MaterialIcons
+                  name={item.up ? 'trending-up' : 'trending-down'}
+                  size={12}
+                  color={item.up ? COLORS.success : COLORS.danger}
+                />
+                <Text
+                  style={[
+                    styles.tickerChange,
+                    { color: item.up ? COLORS.success : COLORS.danger }
+                  ]}
+                >
+                  {item.change}
                 </Text>
               </View>
-            </Pressable>
+            </View>
+          ))}
+        </ScrollView>
+
+        <View style={styles.segmentedControl}>
+          {segments.map((segment) => {
+            const isActive = segment === activeSegment;
+            return (
+              <Pressable
+                key={segment}
+                style={[styles.segmentChip, isActive && styles.segmentChipActive]}
+                onPress={() => {
+                  setActiveSegment(segment);
+                  if (segment === 'MFs') {
+                    navigation.getParent()?.navigate('MutualFunds');
+                  }
+                }}
+              >
+                <Text style={[styles.segmentText, isActive && styles.segmentTextActive]}>
+                  {segment}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <View style={styles.portfolioCard}>
+          <LinearGradient
+            colors={[COLORS.card, COLORS.background]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.portfolioGradient}
+          >
+            <View style={styles.portfolioGlow} />
+            <View style={styles.portfolioHeader}>
+              <View>
+                <Text style={styles.portfolioLabel}>Day's Profit</Text>
+                <Text style={styles.portfolioValue}>+ ₹12,840.40</Text>
+              </View>
+              <View style={styles.portfolioBadge}>
+                <MaterialIcons name="arrow-upward" size={12} color={COLORS.success} />
+                <Text style={styles.portfolioBadgeText}>3.2%</Text>
+              </View>
+            </View>
+            <View style={styles.portfolioGrid}>
+              <View style={styles.portfolioMiniCard}>
+                <Text style={styles.portfolioMiniLabel}>Today's Returns</Text>
+                <Text style={styles.portfolioMiniValue}>+ ₹4,210</Text>
+              </View>
+              <View style={styles.portfolioMiniCard}>
+                <Text style={styles.portfolioMiniLabel}>Available Cash</Text>
+                <Text style={styles.portfolioMiniValue}>₹85,140</Text>
+              </View>
+            </View>
+          </LinearGradient>
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionTitleRow}>
+            <View style={[styles.sectionMarker, { backgroundColor: COLORS.primary }]} />
+            <Text style={styles.sectionTitle}>Top Gainers</Text>
+          </View>
+          <Pressable>
+            <Text style={styles.sectionAction}>View All</Text>
+          </Pressable>
+        </View>
+        <View style={styles.sectionList}>
+          {topGainers.map((item) => (
+            <View key={item.symbol} style={styles.gainerCard}>
+              <View style={styles.gainerLeft}>
+                <View style={styles.logoBox}>
+                  <Image source={{ uri: item.logo }} style={styles.logoImage} />
+                </View>
+                <View>
+                  <Text style={styles.gainerSymbol}>{item.symbol}</Text>
+                  <Text style={styles.gainerName}>{item.name}</Text>
+                </View>
+              </View>
+              <View style={styles.gainerRight}>
+                <Text style={styles.gainerPrice}>₹{item.price}</Text>
+                <Text style={styles.gainerChange}>{item.change}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionTitleRow}>
+            <View style={[styles.sectionMarker, { backgroundColor: COLORS.gold }]} />
+            <Text style={styles.sectionTitle}>Metals & Commodities</Text>
+          </View>
+          <Text style={styles.sectionMeta}>Live MCX</Text>
+        </View>
+        <View style={styles.metalGrid}>
+          {metals.map((metal) => (
+            <View key={metal.label} style={styles.metalCard}>
+              <View style={[styles.metalIconWrap, { backgroundColor: `${metal.accent}1A` }]}
+              >
+                <MaterialIcons name={metal.icon} size={28} color={metal.accent} />
+              </View>
+              <Text style={[styles.metalLabel, { color: metal.accent }]}>{metal.label}</Text>
+              <Text style={styles.metalValue}>{metal.value}</Text>
+              <Text style={styles.metalUnit}>{metal.unit}</Text>
+              <View style={styles.metalFooter}>
+                <Text style={[styles.metalChange, { color: metal.up ? COLORS.success : COLORS.danger }]}>
+                  {metal.change}
+                </Text>
+                <View style={styles.metalDivider}>
+                  <View style={[styles.metalDividerLine, { backgroundColor: metal.accent }]} />
+                </View>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionTitleRow}>
+            <View style={[styles.sectionMarker, { backgroundColor: COLORS.primary }]} />
+            <Text style={styles.sectionTitle}>Top Equity Funds</Text>
+          </View>
+        </View>
+        <View style={styles.fundCard}>
+          {funds.map((fund, index) => (
+            <View key={fund.code} style={[styles.fundRow, index === 0 && styles.fundRowBorder]}>
+              <View style={styles.fundLeft}>
+                <View style={[styles.fundBadge, { backgroundColor: fund.color }]}>
+                  <Text style={styles.fundBadgeText}>{fund.code}</Text>
+                </View>
+                <View>
+                  <Text style={styles.fundTitle}>{fund.name}</Text>
+                  <Text style={styles.fundMeta}>{fund.meta}</Text>
+                </View>
+              </View>
+              <View style={styles.fundRight}>
+                <Text style={styles.fundChange}>{fund.change}</Text>
+                <Text style={styles.fundPeriod}>{fund.period}</Text>
+              </View>
+            </View>
           ))}
         </View>
       </ScrollView>
@@ -241,345 +298,425 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background
   },
   scroll: {
-    paddingBottom: 120
-  },
-  tickerWrap: {
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
-    backgroundColor: 'rgba(5,5,10,0.9)',
-    paddingVertical: 8
-  },
-  tickerRow: {
-    paddingHorizontal: 16,
-    gap: 18
-  },
-  tickerText: {
-    color: '#9da5bd',
-    fontSize: 10,
-    fontFamily: 'Manrope_700Bold',
-    textTransform: 'uppercase'
+    paddingBottom: 140,
+    paddingTop: 8
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 16
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10
-  },
-  headerTitle: {
-    color: 'white',
-    fontSize: 18,
-    fontFamily: 'Manrope_800ExtraBold'
-  },
-  menuButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: 'rgba(17,17,212,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8
-  },
-  toggleShell: {
-    width: 52,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#1a1a2e',
-    borderWidth: 1,
-    borderColor: 'rgba(17,17,212,0.3)',
-    padding: 3,
-    justifyContent: 'center'
-  },
-  toggleThumb: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#ffffff',
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: COLORS.primary
-  },
-  searchWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    marginHorizontal: 16,
-    marginTop: 8
-  },
-  searchInput: {
-    flex: 1,
-    color: 'white',
-    paddingVertical: 12,
-    marginLeft: 8
-  },
-  cardRow: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
     gap: 12
   },
-  balanceCard: {
-    width: 260,
+  headerIcon: {
+    width: 40,
+    height: 40,
     borderRadius: 20,
-    padding: 16
-  },
-  glassCard: {
-    width: 260,
-    borderRadius: 20,
-    padding: 16,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(19,236,236,0.2)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)'
+    borderColor: 'rgba(19,236,236,0.3)',
+    alignItems: 'center',
+    justifyContent: 'center'
   },
-  cardHeader: {
+  headerLabel: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 10,
+    fontFamily: 'Manrope_700Bold',
+    textTransform: 'uppercase',
+    letterSpacing: 1
+  },
+  headerValue: {
+    color: COLORS.text,
+    fontSize: 20,
+    fontFamily: 'Manrope_800ExtraBold',
+    marginTop: 2
+  },
+  headerActions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center'
+    gap: 10
   },
-  cardLabel: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 12,
-    fontFamily: 'Manrope_500Medium'
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(22,42,42,0.6)',
+    borderWidth: 1,
+    borderColor: 'rgba(19,236,236,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center'
   },
-  cardValue: {
-    color: 'white',
-    fontSize: 26,
+  notificationDot: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#ef4444',
+    borderWidth: 2,
+    borderColor: COLORS.background
+  },
+  tickerRow: {
+    paddingHorizontal: 20,
+    gap: 12,
+    paddingBottom: 12
+  },
+  tickerCard: {
+    width: 150,
+    borderRadius: 16,
+    padding: 12,
+    backgroundColor: 'rgba(22,42,42,0.6)',
+    borderWidth: 1,
+    borderColor: 'rgba(19,236,236,0.12)',
+    borderLeftWidth: 3
+  },
+  tickerLabel: {
+    color: 'rgba(255,255,255,0.55)',
+    fontSize: 10,
+    fontFamily: 'Manrope_700Bold'
+  },
+  tickerValue: {
+    color: COLORS.text,
+    fontSize: 14,
     fontFamily: 'Manrope_800ExtraBold',
     marginTop: 6
   },
-  cardDelta: {
+  tickerChangeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     marginTop: 6
   },
-  cardDeltaText: {
-    color: COLORS.accent,
-    fontSize: 12,
+  tickerChange: {
+    fontSize: 10,
     fontFamily: 'Manrope_700Bold'
   },
-  cardDeltaMuted: {
-    color: 'rgba(255,255,255,0.5)',
-    fontFamily: 'Manrope_500Medium'
+  segmentedControl: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(22,42,42,0.6)',
+    borderRadius: 14,
+    marginHorizontal: 20,
+    padding: 4,
+    gap: 4,
+    marginBottom: 18
   },
-  chartCard: {
-    marginHorizontal: 16,
-    borderRadius: 18,
-    padding: 16,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+  segmentChip: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 10,
+    alignItems: 'center'
+  },
+  segmentChipActive: {
+    backgroundColor: COLORS.primary,
+    shadowColor: COLORS.primary,
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 }
+  },
+  segmentText: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 11,
+    fontFamily: 'Manrope_700Bold'
+  },
+  segmentTextActive: {
+    color: COLORS.background
+  },
+  portfolioCard: {
+    marginHorizontal: 20,
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginBottom: 22,
+    borderWidth: 1,
+    borderColor: 'rgba(19,236,236,0.2)'
+  },
+  portfolioGradient: {
+    padding: 18
+  },
+  portfolioGlow: {
+    position: 'absolute',
+    top: -20,
+    right: -20,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: 'rgba(19,236,236,0.12)'
+  },
+  portfolioHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start'
+  },
+  portfolioLabel: {
+    color: 'rgba(19,236,236,0.8)',
+    fontSize: 10,
+    fontFamily: 'Manrope_700Bold',
+    textTransform: 'uppercase',
+    letterSpacing: 1
+  },
+  portfolioValue: {
+    color: COLORS.success,
+    fontSize: 26,
+    fontFamily: 'Manrope_800ExtraBold',
+    marginTop: 4
+  },
+  portfolioBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(57,255,20,0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8
+  },
+  portfolioBadgeText: {
+    color: COLORS.success,
+    fontSize: 10,
+    fontFamily: 'Manrope_700Bold'
+  },
+  portfolioGrid: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16
+  },
+  portfolioMiniCard: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)'
   },
-  chartHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12
-  },
-  tickerRowMini: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6
-  },
-  logoDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#ffffff',
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  logoImg: {
-    width: 14,
-    height: 14
-  },
-  tickerLabel: {
-    color: 'rgba(255,255,255,0.6)',
+  portfolioMiniLabel: {
+    color: 'rgba(255,255,255,0.5)',
     fontSize: 10,
-    textTransform: 'uppercase',
-    fontFamily: 'Manrope_700Bold'
+    fontFamily: 'Manrope_700Bold',
+    textTransform: 'uppercase'
   },
-  chartPrice: {
-    color: 'white',
-    fontSize: 28,
+  portfolioMiniValue: {
+    color: COLORS.text,
+    fontSize: 14,
     fontFamily: 'Manrope_800ExtraBold',
     marginTop: 6
   },
-  chartRight: {
-    alignItems: 'flex-end'
-  },
-  chartChange: {
-    color: COLORS.accent,
-    fontSize: 16,
-    fontFamily: 'Manrope_700Bold'
-  },
-  chartRealTime: {
-    color: 'rgba(255,255,255,0.4)',
-    fontSize: 10,
-    fontFamily: 'Manrope_500Medium'
-  },
-  rangeRow: {
+  sectionHeader: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 10,
-    padding: 4,
-    gap: 6
-  },
-  rangeChip: {
-    flex: 1,
     alignItems: 'center',
-    paddingVertical: 6,
-    borderRadius: 8
-  },
-  rangeChipActive: {
-    backgroundColor: COLORS.primary
-  },
-  rangeText: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.5)',
-    fontFamily: 'Manrope_700Bold'
-  },
-  rangeTextActive: {
-    color: 'white'
-  },
-  chartWrap: {
-    height: 160,
-    marginTop: 12
-  },
-  chartTimes: {
-    flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 8
-  },
-  chartTimeText: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.3)',
-    fontFamily: 'Manrope_700Bold'
-  },
-  actionRow: {
-    flexDirection: 'row',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16
-  },
-  buyButton: {
-    flex: 1,
-    backgroundColor: COLORS.accent,
-    paddingVertical: 14,
-    borderRadius: 14,
-    alignItems: 'center'
-  },
-  buyText: {
-    color: '#0a0a14',
-    fontFamily: 'Manrope_800ExtraBold'
-  },
-  sellButton: {
-    flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    paddingVertical: 14,
-    borderRadius: 14,
-    alignItems: 'center'
-  },
-  sellText: {
-    color: 'white',
-    fontFamily: 'Manrope_800ExtraBold'
-  },
-  watchHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     marginBottom: 12
   },
-  watchTitle: {
-    color: 'white',
-    fontSize: 16,
-    fontFamily: 'Manrope_700Bold'
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8
   },
-  watchAction: {
+  sectionMarker: {
+    width: 6,
+    height: 22,
+    borderRadius: 999
+  },
+  sectionTitle: {
+    color: COLORS.text,
+    fontSize: 18,
+    fontFamily: 'Manrope_800ExtraBold'
+  },
+  sectionAction: {
     color: COLORS.primary,
     fontSize: 12,
     fontFamily: 'Manrope_700Bold'
   },
-  watchList: {
-    paddingHorizontal: 16,
+  sectionMeta: {
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 10,
+    fontFamily: 'Manrope_700Bold'
+  },
+  sectionList: {
+    paddingHorizontal: 20,
+    gap: 12,
+    marginBottom: 20
+  },
+  gainerCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderRadius: 18,
+    backgroundColor: 'rgba(22,42,42,0.6)',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderLeftWidth: 2,
+    borderLeftColor: COLORS.success
+  },
+  gainerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 12
   },
-  watchItem: {
+  logoBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: '#ffffff',
+    padding: 8,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  logoImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'contain'
+  },
+  gainerSymbol: {
+    color: COLORS.text,
+    fontSize: 13,
+    fontFamily: 'Manrope_800ExtraBold'
+  },
+  gainerName: {
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 10,
+    fontFamily: 'Manrope_500Medium'
+  },
+  gainerRight: {
+    alignItems: 'flex-end'
+  },
+  gainerPrice: {
+    color: COLORS.text,
+    fontSize: 13,
+    fontFamily: 'Manrope_800ExtraBold'
+  },
+  gainerChange: {
+    color: COLORS.success,
+    fontSize: 12,
+    fontFamily: 'Manrope_700Bold'
+  },
+  metalGrid: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 20,
+    marginBottom: 20
+  },
+  metalCard: {
+    flex: 1,
+    borderRadius: 18,
+    padding: 16,
+    backgroundColor: 'rgba(22,42,42,0.6)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)'
+  },
+  metalIconWrap: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  metalLabel: {
+    fontSize: 10,
+    fontFamily: 'Manrope_700Bold',
+    textTransform: 'uppercase',
+    letterSpacing: 1
+  },
+  metalValue: {
+    color: COLORS.text,
+    fontSize: 18,
+    fontFamily: 'Manrope_800ExtraBold',
+    marginTop: 8
+  },
+  metalUnit: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 10,
+    fontFamily: 'Manrope_500Medium',
+    marginTop: 4
+  },
+  metalFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 14
+  },
+  metalChange: {
+    fontSize: 10,
+    fontFamily: 'Manrope_700Bold'
+  },
+  metalDivider: {
+    width: 48,
+    height: 8,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  metalDividerLine: {
+    width: 30,
+    height: 2,
+    borderRadius: 2
+  },
+  fundCard: {
+    marginHorizontal: 20,
+    borderRadius: 18,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: 'rgba(22,42,42,0.6)'
+  },
+  fundRow: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 14,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.08)'
+    alignItems: 'center'
   },
-  watchLeft: {
+  fundRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(19,236,236,0.1)'
+  },
+  fundLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10
   },
-  watchBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#232348',
+  fundBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center'
   },
-  watchBadgeText: {
-    color: COLORS.primary,
+  fundBadgeText: {
+    color: '#ffffff',
+    fontSize: 10,
+    fontFamily: 'Manrope_800ExtraBold'
+  },
+  fundTitle: {
+    color: COLORS.text,
+    fontSize: 12,
     fontFamily: 'Manrope_700Bold'
   },
-  watchName: {
-    color: 'white',
-    fontFamily: 'Manrope_700Bold'
-  },
-  watchShares: {
-    color: 'rgba(255,255,255,0.4)',
-    fontSize: 11,
+  fundMeta: {
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 9,
     fontFamily: 'Manrope_500Medium'
   },
-  watchRight: {
+  fundRight: {
     alignItems: 'flex-end'
   },
-  watchPrice: {
-    color: 'white',
-    fontFamily: 'Manrope_700Bold'
+  fundChange: {
+    color: COLORS.success,
+    fontSize: 12,
+    fontFamily: 'Manrope_800ExtraBold'
   },
-  watchChange: {
-    fontSize: 11,
-    fontFamily: 'Manrope_700Bold'
-  },
-  changeUp: {
-    color: COLORS.accent
-  },
-  changeDown: {
-    color: '#ef4444'
+  fundPeriod: {
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 9,
+    fontFamily: 'Manrope_500Medium'
   }
 });

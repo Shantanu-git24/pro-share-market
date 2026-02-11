@@ -12,9 +12,11 @@ import HeatmapScreen from './screens/HeatmapScreen';
 import NewsScreen from './screens/NewsScreen';
 import PortfolioScreen from './screens/PortfolioScreen';
 import ProfileScreen from './screens/ProfileScreen';
+import MutualFundsScreen from './screens/MutualFundsScreen';
 import StockDetailScreen from './screens/StockDetailScreen';
 import WatchlistScreen from './screens/WatchlistScreen';
 import AnalyticsScreen from './screens/AnalyticsScreen';
+import MenuScreen from './screens/MenuScreen';
 import BottomNav from './components/BottomNav';
 
 Text.defaultProps = Text.defaultProps || {};
@@ -90,6 +92,8 @@ export default function App() {
           <Stack.Screen name="StockDetail" component={StockDetailScreen} />
           <Stack.Screen name="Watchlist" component={WatchlistScreen} />
           <Stack.Screen name="Analytics" component={AnalyticsScreen} />
+          <Stack.Screen name="MutualFunds" component={MutualFundsScreen} />
+          <Stack.Screen name="Menu" component={MenuScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
