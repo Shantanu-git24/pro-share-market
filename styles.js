@@ -1,12 +1,14 @@
 import { StyleSheet, Dimensions, Platform, StatusBar } from 'react-native';
 
 export const COLORS = {
-  primary: '#1111d4',
-  accent: '#0bda68',
-  danger: '#ff4d4d',
-  bgDark: '#0a0a14',
-  cardDark: '#161633',
-  muted: '#c2cbe3'
+  primary: '#0ea5e9',
+  accent: '#22c55e',
+  danger: '#ef4444',
+  bgDark: '#f8fafc',
+  cardDark: '#ffffff',
+  muted: '#64748b',
+  text: '#0f172a',
+  border: '#e2e8f0'
 };
 
 export const spacing = {
@@ -29,10 +31,10 @@ export const styles = StyleSheet.create({
     flex: 1
   },
   glassCard: {
-    backgroundColor: 'rgba(22, 22, 51, 0.75)',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(15, 23, 42, 0.08)',
     padding: spacing.lg
   },
   header: {
@@ -42,9 +44,9 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(10, 10, 20, 0.95)',
+    backgroundColor: '#ffffff',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.08)'
+    borderBottomColor: 'rgba(15, 23, 42, 0.08)'
   },
   headerLeft: {
     flexDirection: 'row',
@@ -57,7 +59,7 @@ export const styles = StyleSheet.create({
     gap: spacing.sm
   },
   headerTitle: {
-    color: 'white',
+    color: COLORS.text,
     fontSize: 18,
     fontWeight: '700',
     fontFamily: 'SpaceGrotesk_700Bold'
@@ -77,10 +79,10 @@ export const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(22, 22, 51, 0.8)'
+    backgroundColor: '#f1f5f9'
   },
   iconButtonActive: {
-    backgroundColor: 'rgba(22, 22, 51, 1)'
+    backgroundColor: '#e2e8f0'
   },
   avatar: {
     width: 40,
@@ -99,11 +101,11 @@ export const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     borderRadius: 32,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
-    backgroundColor: 'rgba(255,255,255,0.45)',
-    shadowColor: '#000000',
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
+    borderColor: 'rgba(15, 23, 42, 0.12)',
+    backgroundColor: 'rgba(255, 255, 255, 0.72)',
+    shadowColor: '#0f172a',
+    shadowOpacity: 0.18,
+    shadowRadius: 18,
     shadowOffset: { width: 0, height: 6 },
     elevation: 8,
     overflow: 'hidden'
@@ -123,7 +125,7 @@ export const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)'
+    backgroundColor: 'rgba(255, 255, 255, 0.75)'
   },
   navIconWrapActive: {
     backgroundColor: COLORS.primary,
@@ -139,7 +141,7 @@ export const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(17, 17, 212, 0.18)'
+    backgroundColor: 'rgba(14, 165, 233, 0.15)'
   },
   navActiveDot: {
     width: 18,
@@ -152,10 +154,10 @@ export const styles = StyleSheet.create({
     letterSpacing: 0.4,
     fontWeight: '700',
     fontFamily: 'SpaceGrotesk_600SemiBold',
-    color: 'white',
+    color: COLORS.text,
   },
   navLabelActive: {
-    color: 'black'
+    color: COLORS.text
   },
   loginContainer: {
     flex: 1,
@@ -168,18 +170,18 @@ export const styles = StyleSheet.create({
     padding: spacing.xl,
     gap: spacing.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)'
+    borderColor: 'rgba(15, 23, 42, 0.08)'
   },
   loginBadge: {
     width: 72,
     height: 72,
     borderRadius: 24,
-    backgroundColor: 'rgba(17, 17, 212, 0.2)',
+    backgroundColor: 'rgba(14, 165, 233, 0.12)',
     alignItems: 'center',
     justifyContent: 'center'
   },
   loginTitle: {
-    color: 'white',
+    color: COLORS.text,
     fontSize: 30,
     fontWeight: '800',
     fontFamily: 'SpaceGrotesk_700Bold'
@@ -204,15 +206,15 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: 'rgba(10, 10, 20, 0.6)',
+    backgroundColor: '#f1f5f9',
     borderRadius: 16,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)'
+    borderColor: 'rgba(15, 23, 42, 0.12)'
   },
   input: {
-    color: 'white',
+    color: COLORS.text,
     fontSize: 14,
     fontFamily: 'SpaceGrotesk_400Regular',
     flex: 1
@@ -301,7 +303,7 @@ export const styles = StyleSheet.create({
     marginTop: spacing.md
   },
   portfolioChangeText: {
-    color: 'rgba(255,255,255,0.6)',
+    color: COLORS.muted,
     fontSize: 12,
     fontFamily: 'SpaceGrotesk_400Regular'
   },
@@ -312,7 +314,7 @@ export const styles = StyleSheet.create({
     fontFamily: 'SpaceGrotesk_400Regular'
   },
   sectionTitle: {
-    color: 'white',
+    color: COLORS.text,
     fontSize: 18,
     fontWeight: '700',
     fontFamily: 'SpaceGrotesk_600SemiBold'
@@ -324,14 +326,14 @@ export const styles = StyleSheet.create({
     fontFamily: 'SpaceGrotesk_600SemiBold'
   },
   watchItem: {
-    backgroundColor: 'rgba(22, 22, 51, 0.7)',
+    backgroundColor: '#ffffff',
     borderRadius: 18,
     padding: spacing.lg,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)'
+    borderColor: 'rgba(15, 23, 42, 0.08)'
   },
   watchLeft: {
     flexDirection: 'row',
@@ -342,7 +344,7 @@ export const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: 'rgba(17, 17, 212, 0.15)',
+    backgroundColor: 'rgba(14, 165, 233, 0.12)',
     alignItems: 'center',
     justifyContent: 'center'
   },
@@ -352,7 +354,7 @@ export const styles = StyleSheet.create({
     fontFamily: 'SpaceGrotesk_700Bold'
   },
   watchName: {
-    color: 'white',
+    color: COLORS.text,
     fontWeight: '700',
     fontFamily: 'SpaceGrotesk_600SemiBold'
   },
@@ -365,7 +367,7 @@ export const styles = StyleSheet.create({
     alignItems: 'flex-end'
   },
   watchPrice: {
-    color: 'white',
+    color: COLORS.text,
     fontWeight: '700',
     fontFamily: 'SpaceGrotesk_600SemiBold'
   },
@@ -402,13 +404,13 @@ export const styles = StyleSheet.create({
     minWidth: 60
   },
   allocationValue: {
-    color: 'white',
+    color: COLORS.text,
     fontWeight: '700',
     fontSize: 11,
     fontFamily: 'SpaceGrotesk_600SemiBold'
   },
   pageTitle: {
-    color: 'white',
+    color: COLORS.text,
     fontSize: 22,
     fontWeight: '800',
     fontFamily: 'SpaceGrotesk_700Bold',
@@ -422,15 +424,15 @@ export const styles = StyleSheet.create({
   },
   marketCard: {
     width: cardWidth,
-    backgroundColor: 'rgba(22, 22, 51, 0.7)',
+    backgroundColor: '#ffffff',
     borderRadius: 20,
     padding: spacing.md,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(15, 23, 42, 0.08)',
     marginBottom: spacing.md
   },
   marketSymbol: {
-    color: 'white',
+    color: COLORS.text,
     fontSize: 18,
     fontWeight: '800',
     fontFamily: 'SpaceGrotesk_700Bold'
@@ -454,7 +456,7 @@ export const styles = StyleSheet.create({
     marginTop: spacing.sm
   },
   marketPrice: {
-    color: 'white',
+    color: COLORS.text,
     fontWeight: '800',
     fontFamily: 'SpaceGrotesk_700Bold'
   },
@@ -722,12 +724,12 @@ export const styles = StyleSheet.create({
     fontFamily: 'SpaceGrotesk_600SemiBold'
   },
   detailCard: {
-    backgroundColor: 'rgba(22, 22, 51, 0.7)',
+    backgroundColor: '#ffffff',
     borderRadius: 24,
     padding: spacing.xl,
     gap: spacing.sm,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)'
+    borderColor: 'rgba(15, 23, 42, 0.08)'
   },
   detailSymbol: {
     color: COLORS.primary,
@@ -737,13 +739,13 @@ export const styles = StyleSheet.create({
     fontFamily: 'SpaceGrotesk_600SemiBold'
   },
   detailName: {
-    color: 'white',
+    color: COLORS.text,
     fontSize: 20,
     fontWeight: '700',
     fontFamily: 'SpaceGrotesk_600SemiBold'
   },
   detailPrice: {
-    color: 'white',
+    color: COLORS.text,
     fontSize: 28,
     fontWeight: '800',
     fontFamily: 'SpaceGrotesk_700Bold'

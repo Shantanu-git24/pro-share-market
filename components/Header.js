@@ -9,7 +9,7 @@ export default function Header({ title, showBack = false, onBack = () => {} }) {
       <View style={styles.headerLeft}>
         {showBack ? (
           <Pressable onPress={onBack} style={styles.iconButton}>
-            <ChevronLeft size={20} color="white" />
+            <ChevronLeft size={20} color={COLORS.text} />
           </Pressable>
         ) : (
           <View style={[styles.iconButton, styles.iconButtonActive]}>
@@ -18,12 +18,12 @@ export default function Header({ title, showBack = false, onBack = () => {} }) {
         )}
         <View>
           <Text style={styles.headerTitle}>{title}</Text>
-          {!showBack && <Text style={styles.headerSubtitle}>ProTrader Terminal</Text>}
+          {!showBack && <Text style={styles.headerSubtitle}>Market Center</Text>}
         </View>
       </View>
       <View style={styles.headerRight}>
         <Pressable style={styles.iconButton}>
-          <Bell size={18} color="white" />
+          <Bell size={18} color={COLORS.text} />
         </Pressable>
         <Image
           source={{ uri: 'https://picsum.photos/seed/user/100' }}

@@ -1,31 +1,74 @@
-import React from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, ScrollView, Pressable, StyleSheet, RefreshControl } from 'react-native';
 import Svg, { Path, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import Screen from '../components/Screen';
+import { api } from '../api';
 
 const COLORS = {
-  primary: '#1111d4',
-  success: '#0bda68',
-  danger: '#ff4d4d',
-  background: '#101022',
-  surface: '#161633',
-  muted: '#9292c9'
+  primary: '#0ea5e9',
+  success: '#16a34a',
+  danger: '#ef4444',
+  background: '#f8fafc',
+  surface: '#ffffff',
+  muted: '#64748b',
+  text: '#0f172a',
+  border: '#e2e8f0',
+  soft: '#f1f5f9'
 };
 
 export default function StockDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const symbol = route.params?.symbol || 'TSLA';
-  const name = symbol === 'TSLA' ? 'Tesla Motors, Inc.' : 'Stock Corporation';
+  const [quote, setQuote] = useState({
+    price: 175.22,
+    changePercent: 2.41,
+    name: 'Stock Corporation'
+  });
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadQuote = React.useCallback(async () => {
+    const resolvedSymbol = symbol.includes('.') ? symbol : `${symbol}.BSE`;
+    const stocks = await api.getStocks([resolvedSymbol]);
+    if (!stocks.length) {
+      return;
+    }
+    const stock = stocks[0];
+    setQuote({
+      price: stock.price,
+      changePercent: stock.changePercent,
+      name: stock.name || symbol
+    });
+  }, [symbol]);
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    await loadQuote();
+    setRefreshing(false);
+  }, [loadQuote]);
+
+  useEffect(() => {
+    loadQuote();
+    const intervalId = setInterval(loadQuote, 60 * 1000);
+    return () => clearInterval(intervalId);
+  }, [loadQuote]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadQuote();
+    }, [loadQuote])
+  );
+
+  const name = quote.name || symbol;
 
   return (
     <Screen style={styles.root}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Pressable style={styles.iconButton} onPress={() => navigation.goBack()}>
-            <MaterialIcons name="arrow-back-ios" size={18} color="white" />
+            <MaterialIcons name="arrow-back-ios" size={18} color={COLORS.text} />
           </Pressable>
           <View>
             <Text style={styles.headerSymbol}>{symbol}</Text>
@@ -34,22 +77,28 @@ export default function StockDetailScreen() {
         </View>
         <View style={styles.headerRight}>
           <Pressable style={styles.glassIcon}>
-            <MaterialIcons name="star" size={18} color="white" />
+            <MaterialIcons name="star" size={18} color={COLORS.text} />
           </Pressable>
           <Pressable style={styles.glassIcon}>
-            <MaterialIcons name="share" size={18} color="white" />
+            <MaterialIcons name="share" size={18} color={COLORS.text} />
           </Pressable>
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
+      >
         <View style={styles.heroRow}>
           <View>
             <View style={styles.priceRow}>
-              <Text style={styles.price}>$175.22</Text>
+              <Text style={styles.price}>₹{Number(quote.price).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</Text>
               <View style={styles.deltaRow}>
-                <MaterialIcons name="arrow-upward" size={14} color={COLORS.success} />
-                <Text style={styles.deltaText}>2.41%</Text>
+                <MaterialIcons name={quote.changePercent >= 0 ? 'arrow-upward' : 'arrow-downward'} size={14} color={quote.changePercent >= 0 ? COLORS.success : COLORS.danger} />
+                <Text style={[styles.deltaText, { color: quote.changePercent >= 0 ? COLORS.success : COLORS.danger }]}>
+                  {`${quote.changePercent >= 0 ? '+' : ''}${Number(quote.changePercent).toFixed(2)}%`}
+                </Text>
               </View>
             </View>
             <Text style={styles.closedText}>Closed: Mar 22, 4:00 PM EDT</Text>
@@ -155,31 +204,6 @@ export default function StockDetailScreen() {
         </View>
       </ScrollView>
 
-      <View style={styles.tradePanel}>
-        <View style={styles.tradeRow}>
-          <View>
-            <Text style={styles.tradeLabel}>Quantity</Text>
-            <View style={styles.tradeValueRow}>
-              <Text style={styles.tradeValue}>10</Text>
-              <Text style={styles.tradeUnit}>Shares</Text>
-            </View>
-          </View>
-          <View style={styles.tradeTotal}>
-            <Text style={styles.tradeLabel}>Est. Total</Text>
-            <Text style={styles.tradeValue}>$1,752.20</Text>
-          </View>
-        </View>
-        <View style={styles.tradeButtons}>
-          <Pressable style={styles.sellBtn}>
-            <MaterialIcons name="trending-down" size={18} color="white" />
-            <Text style={styles.tradeBtnText}>SELL</Text>
-          </Pressable>
-          <Pressable style={styles.buyBtn}>
-            <MaterialIcons name="trending-up" size={18} color="white" />
-            <Text style={styles.tradeBtnText}>BUY</Text>
-          </Pressable>
-        </View>
-      </View>
     </Screen>
   );
 }
@@ -197,7 +221,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.08)'
+    borderBottomColor: COLORS.border
   },
   headerLeft: {
     flexDirection: 'row',
@@ -208,12 +232,12 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1f213f',
+    backgroundColor: COLORS.soft,
     alignItems: 'center',
     justifyContent: 'center'
   },
   headerSymbol: {
-    color: 'white',
+    color: COLORS.text,
     fontSize: 16,
     fontFamily: 'Manrope_700Bold'
   },
@@ -230,11 +254,11 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(35,35,72,0.4)',
+    backgroundColor: COLORS.soft,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)'
+    borderColor: COLORS.border
   },
   scroll: {
     paddingBottom: 220
@@ -252,7 +276,7 @@ const styles = StyleSheet.create({
     gap: 8
   },
   price: {
-    color: 'white',
+    color: COLORS.text,
     fontSize: 34,
     fontFamily: 'Manrope_800ExtraBold'
   },
@@ -271,7 +295,7 @@ const styles = StyleSheet.create({
     marginTop: 6
   },
   marketStatus: {
-    backgroundColor: 'rgba(11,218,104,0.2)',
+    backgroundColor: 'rgba(22, 163, 74, 0.12)',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999
@@ -295,7 +319,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: '#232348'
+    backgroundColor: COLORS.soft
   },
   rangeChipActive: {
     backgroundColor: COLORS.primary
@@ -306,14 +330,14 @@ const styles = StyleSheet.create({
     fontFamily: 'Manrope_700Bold'
   },
   rangeTextActive: {
-    color: 'white'
+    color: '#ffffff'
   },
   candleButton: {
     marginLeft: 'auto',
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: '#232348',
+    backgroundColor: COLORS.soft,
     alignItems: 'center',
     justifyContent: 'center'
   },
@@ -322,7 +346,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: COLORS.border,
     overflow: 'hidden'
   },
   chartGradient: {
@@ -331,7 +355,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     left: 0,
-    backgroundColor: 'rgba(17,17,212,0.08)'
+    backgroundColor: 'rgba(14, 165, 233, 0.08)'
   },
   chartGrid: {
     position: 'absolute',
@@ -344,13 +368,13 @@ const styles = StyleSheet.create({
   },
   gridLine: {
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.08)'
+    backgroundColor: COLORS.border
   },
   indicatorToggle: {
     flexDirection: 'row',
     marginHorizontal: 16,
     marginTop: 16,
-    backgroundColor: '#232348',
+    backgroundColor: COLORS.soft,
     borderRadius: 12,
     padding: 4
   },
@@ -361,14 +385,14 @@ const styles = StyleSheet.create({
     borderRadius: 8
   },
   indicatorActive: {
-    backgroundColor: '#111122'
+    backgroundColor: '#ffffff'
   },
   indicatorText: {
     color: COLORS.muted,
     fontFamily: 'Manrope_600SemiBold'
   },
   indicatorTextActive: {
-    color: 'white'
+    color: COLORS.text
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -378,7 +402,7 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   sectionTitle: {
-    color: 'white',
+    color: COLORS.text,
     fontSize: 16,
     fontFamily: 'Manrope_700Bold',
     marginLeft: 16,
@@ -404,7 +428,7 @@ const styles = StyleSheet.create({
     marginBottom: 8
   },
   orderHeaderText: {
-    color: '#94a3b8',
+    color: COLORS.muted,
     fontSize: 10,
     textTransform: 'uppercase',
     fontFamily: 'Manrope_700Bold'
@@ -434,7 +458,7 @@ const styles = StyleSheet.create({
     marginBottom: 6
   },
   orderSize: {
-    color: 'white',
+    color: COLORS.text,
     fontSize: 12,
     fontFamily: 'Manrope_500Medium'
   },
@@ -455,11 +479,11 @@ const styles = StyleSheet.create({
   },
   fundamentalCard: {
     width: '48%',
-    backgroundColor: '#1a1a3a',
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)'
+    borderColor: COLORS.border
   },
   fundamentalLabel: {
     color: COLORS.muted,
@@ -467,7 +491,7 @@ const styles = StyleSheet.create({
     marginBottom: 4
   },
   fundamentalValue: {
-    color: 'white',
+    color: COLORS.text,
     fontFamily: 'Manrope_700Bold'
   },
   tradePanel: {

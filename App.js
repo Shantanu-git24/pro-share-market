@@ -1,5 +1,5 @@
 import 'react-native-gesture-handler';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Text, TextInput, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
@@ -31,10 +31,10 @@ const AppTheme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    background: '#0a0a14',
-    card: '#0a0a14',
-    text: '#ffffff',
-    border: 'rgba(255,255,255,0.08)'
+    background: '#f8fafc',
+    card: '#ffffff',
+    text: '#0f172a',
+    border: 'rgba(15, 23, 42, 0.12)'
   }
 };
 
@@ -73,12 +73,26 @@ export default function App() {
     Manrope_700Bold,
     Manrope_800ExtraBold
   });
+  const [fontReady, setFontReady] = useState(false);
 
-  if (!fontsLoaded) {
+  useEffect(() => {
+    if (fontsLoaded) {
+      setFontReady(true);
+      return undefined;
+    }
+
+    const timeout = setTimeout(() => {
+      setFontReady(true);
+    }, 4000);
+
+    return () => clearTimeout(timeout);
+  }, [fontsLoaded]);
+
+  if (!fontReady) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#0a0a14', alignItems: 'center', justifyContent: 'center' }}>
-        <StatusBar style="light" />
-        <Text style={{ color: 'white', fontSize: 14, fontFamily: 'Manrope_500Medium' }}>Loading interface...</Text>
+      <View style={{ flex: 1, backgroundColor: '#f8fafc', alignItems: 'center', justifyContent: 'center' }}>
+        <StatusBar style="dark" />
+        <Text style={{ color: '#0f172a', fontSize: 14, fontFamily: 'Manrope_500Medium' }}>Loading interface...</Text>
       </View>
     );
   }
@@ -86,7 +100,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <NavigationContainer theme={AppTheme}>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="MainTabs" component={MainTabs} />
           <Stack.Screen name="StockDetail" component={StockDetailScreen} />

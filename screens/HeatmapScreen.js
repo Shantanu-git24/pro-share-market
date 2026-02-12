@@ -1,40 +1,105 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, RefreshControl } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
+import { api } from '../api';
+import { useFocusEffect } from '@react-navigation/native';
 
 const COLORS = {
-  primary: '#0d83f2',
-  background: '#101922',
-  success: '#00ff88',
-  danger: '#ff4d4d',
-  muted: '#94a3b8'
+  primary: '#0ea5e9',
+  background: '#f8fafc',
+  success: '#16a34a',
+  danger: '#ef4444',
+  muted: '#64748b',
+  text: '#0f172a',
+  border: '#e2e8f0',
+  soft: '#f1f5f9'
 };
 
-const tickerItems = [
-  { label: 'S&P 500', value: '4,890.97', change: '+1.24%', tone: COLORS.success },
-  { label: 'NASDAQ', value: '15,628.95', change: '+0.88%', tone: COLORS.success },
-  { label: 'DJIA', value: '38,109.43', change: '-0.12%', tone: COLORS.danger },
-  { label: 'BTC', value: '52,431.10', change: '+4.51%', tone: COLORS.success }
+const defaultTickerItems = [
+  { label: 'NIFTY 50', value: '22,038.40', change: '+0.84%', tone: COLORS.success },
+  { label: 'SENSEX', value: '72,540.30', change: '+0.78%', tone: COLORS.success },
+  { label: 'BANK NIFTY', value: '47,215.10', change: '-0.24%', tone: COLORS.danger },
+  { label: 'MCX', value: '8,421.10', change: '+0.62%', tone: COLORS.success }
 ];
 
-const heatmapTiles = [
-  { symbol: 'AAPL', name: 'Apple Inc.', change: '+2.45%', tone: COLORS.success, col: 6, row: 5 },
-  { symbol: 'MSFT', name: '', change: '+1.12%', tone: 'rgba(0,255,136,0.6)', col: 6, row: 3 },
-  { symbol: 'NVDA', name: '', change: '+5.82%', tone: COLORS.success, col: 3, row: 4 },
-  { symbol: 'AMZN', name: '', change: '-0.45%', tone: 'rgba(255,77,77,0.4)', col: 3, row: 2 },
-  { symbol: 'GOOGL', name: '', change: '+0.05%', tone: '#1f2937', col: 6, row: 4 },
-  { symbol: 'META', name: '', change: '+1.88%', tone: 'rgba(0,255,136,0.7)', col: 3, row: 3 },
-  { symbol: 'TSLA', name: '', change: '-3.20%', tone: COLORS.danger, col: 3, row: 3 },
-  { symbol: 'BRK.B', name: '', change: '-1.15%', tone: 'rgba(255,77,77,0.6)', col: 6, row: 3 },
-  { symbol: 'AVGO', name: '', change: '+0.42%', tone: 'rgba(0,255,136,0.4)', col: 3, row: 2 },
-  { symbol: 'JPM', name: '', change: '+2.10%', tone: 'rgba(0,255,136,0.8)', col: 3, row: 2 }
+const defaultHeatmapTiles = [
+  { symbol: 'RELIANCE', name: 'Reliance Industries', change: '+2.45%', tone: COLORS.success, col: 6, row: 5 },
+  { symbol: 'HDFCBANK', name: '', change: '+1.12%', tone: 'rgba(22, 163, 74, 0.6)', col: 6, row: 3 },
+  { symbol: 'TCS', name: '', change: '+0.82%', tone: COLORS.success, col: 3, row: 4 },
+  { symbol: 'INFY', name: '', change: '-0.45%', tone: 'rgba(239, 68, 68, 0.4)', col: 3, row: 2 },
+  { symbol: 'ICICIBANK', name: '', change: '+0.05%', tone: 'rgba(148, 163, 184, 0.35)', col: 6, row: 4 },
+  { symbol: 'SBIN', name: '', change: '+1.88%', tone: 'rgba(22, 163, 74, 0.7)', col: 3, row: 3 },
+  { symbol: 'LT', name: '', change: '-1.20%', tone: COLORS.danger, col: 3, row: 3 },
+  { symbol: 'ITC', name: '', change: '+0.42%', tone: 'rgba(22, 163, 74, 0.4)', col: 3, row: 2 }
 ];
 
 export default function HeatmapScreen() {
+  const [tickerItems, setTickerItems] = useState(defaultTickerItems);
+  const [heatmapTiles, setHeatmapTiles] = useState(defaultHeatmapTiles);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadData = React.useCallback(async () => {
+    const [indicesData, heatmapData] = await Promise.all([
+      api.getIndices(),
+      api.getHeatmap()
+    ]);
+
+    if (indicesData.length) {
+      setTickerItems(
+        indicesData.map((item) => ({
+          label: item.label,
+          value: Number(item.price).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+          change: `${item.change >= 0 ? '+' : ''}${Number(item.changePercent).toFixed(2)}%`,
+          tone: item.change >= 0 ? COLORS.success : COLORS.danger
+        }))
+      );
+    }
+
+    if (heatmapData.length) {
+      setHeatmapTiles(
+        heatmapData.map((tile) => {
+          const change = Number(tile.changePercent || 0);
+          const isHot = Math.abs(change) >= 1.5;
+          return {
+            symbol: String(tile.symbol).replace('.BSE', ''),
+            name: tile.name || '',
+            change: `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`,
+            tone: change >= 1 ? 'rgba(22, 163, 74, 0.75)' : change <= -1 ? 'rgba(239, 68, 68, 0.7)' : 'rgba(148, 163, 184, 0.35)',
+            col: 3,
+            row: 4,
+            textLight: isHot
+          };
+        })
+      );
+    }
+  }, []);
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  }, [loadData]);
+
+  useEffect(() => {
+    loadData();
+    const intervalId = setInterval(loadData, 60 * 1000);
+    return () => clearInterval(intervalId);
+  }, [loadData]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
+
   return (
     <Screen style={styles.root}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
+      >
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <View style={styles.avatar} />
@@ -48,10 +113,10 @@ export default function HeatmapScreen() {
           </View>
           <View style={styles.headerRight}>
             <Pressable style={styles.headerIcon}>
-              <MaterialIcons name="search" size={18} color="white" />
+              <MaterialIcons name="search" size={18} color={COLORS.text} />
             </Pressable>
             <Pressable style={styles.headerIcon}>
-              <MaterialIcons name="notifications-none" size={18} color="white" />
+              <MaterialIcons name="notifications-none" size={18} color={COLORS.text} />
             </Pressable>
           </View>
         </View>
@@ -102,13 +167,13 @@ export default function HeatmapScreen() {
               ]}
             >
               <View style={styles.tileHeader}>
-                <Text style={[styles.tileSymbol, tile.tone === COLORS.danger && styles.tileSymbolLight]}>
+                <Text style={[styles.tileSymbol, tile.textLight && styles.tileSymbolLight]}>
                   {tile.symbol}
                 </Text>
               </View>
               <View>
                 {tile.name ? <Text style={styles.tileName}>{tile.name}</Text> : null}
-                <Text style={[styles.tileChange, tile.tone === COLORS.danger && styles.tileSymbolLight]}>
+                <Text style={[styles.tileChange, tile.textLight && styles.tileSymbolLight]}>
                   {tile.change}
                 </Text>
               </View>
@@ -160,9 +225,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(13,131,242,0.2)',
+    backgroundColor: 'rgba(14, 165, 233, 0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(13,131,242,0.3)'
+    borderColor: 'rgba(14, 165, 233, 0.3)'
   },
   headerLabel: {
     color: COLORS.muted,
@@ -176,7 +241,7 @@ const styles = StyleSheet.create({
     gap: 6
   },
   headerTitle: {
-    color: 'white',
+    color: COLORS.text,
     fontSize: 18,
     fontFamily: 'Manrope_800ExtraBold'
   },
@@ -194,7 +259,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: COLORS.soft,
     alignItems: 'center',
     justifyContent: 'center'
   },
@@ -214,7 +279,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Manrope_700Bold'
   },
   tickerValue: {
-    color: 'white',
+    color: COLORS.text,
     fontSize: 11,
     fontFamily: 'Manrope_700Bold'
   },
@@ -231,9 +296,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: '#ffffff',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)'
+    borderColor: COLORS.border
   },
   sectorChipActive: {
     backgroundColor: COLORS.primary
@@ -244,7 +309,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Manrope_700Bold'
   },
   sectorTextActive: {
-    color: 'white'
+    color: '#ffffff'
   },
   timeRow: {
     paddingHorizontal: 16,
@@ -255,7 +320,7 @@ const styles = StyleSheet.create({
   },
   timeToggle: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: COLORS.soft,
     borderRadius: 10,
     padding: 4,
     gap: 6
@@ -266,7 +331,7 @@ const styles = StyleSheet.create({
     borderRadius: 8
   },
   timeChipActive: {
-    backgroundColor: 'rgba(255,255,255,0.1)'
+    backgroundColor: COLORS.primary
   },
   timeText: {
     color: COLORS.muted,
@@ -274,7 +339,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Manrope_700Bold'
   },
   timeTextActive: {
-    color: 'white'
+    color: '#ffffff'
   },
   sortRow: {
     flexDirection: 'row',
@@ -304,7 +369,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between'
   },
   tileSymbol: {
-    color: '#101922',
+    color: COLORS.text,
     fontFamily: 'Manrope_800ExtraBold'
   },
   tileSymbolLight: {
@@ -312,7 +377,7 @@ const styles = StyleSheet.create({
   },
   tileName: {
     fontSize: 10,
-    color: 'rgba(16,25,34,0.6)',
+    color: 'rgba(15, 23, 42, 0.6)',
     fontFamily: 'Manrope_700Bold',
     textTransform: 'uppercase'
   },
@@ -336,14 +401,14 @@ const styles = StyleSheet.create({
   legendBar: {
     height: 6,
     borderRadius: 999,
-    backgroundColor: '#1f2937',
+    backgroundColor: COLORS.soft,
     marginTop: 10,
     marginBottom: 8
   },
   legendMarker: {
     width: 2,
     height: 10,
-    backgroundColor: 'rgba(255,255,255,0.4)',
+    backgroundColor: 'rgba(15, 23, 42, 0.4)',
     marginLeft: '50%'
   },
   legendFooter: {

@@ -7,13 +7,13 @@ import Screen from '../components/Screen';
 
 const FEATURES = [
   {
-    title: 'Strategy Lab',
-    subtitle: 'Build and backtest new ideas',
+    title: 'Research Lab',
+    subtitle: 'Explore data and test ideas',
     icon: 'biotech'
   },
   {
-    title: 'Auto-Invest',
-    subtitle: 'Set recurring buys with rules',
+    title: 'Auto-Track',
+    subtitle: 'Follow themes with alerts',
     icon: 'autorenew'
   },
   {
@@ -27,13 +27,13 @@ const FEATURES = [
     icon: 'insights'
   },
   {
-    title: 'Tax Vault',
-    subtitle: 'Export reports instantly',
+    title: 'Report Vault',
+    subtitle: 'Export market reports instantly',
     icon: 'receipt-long'
   },
   {
     title: 'Support Desk',
-    subtitle: 'Chat with a trading specialist',
+    subtitle: 'Chat with a market specialist',
     icon: 'support-agent'
   }
 ];
@@ -46,24 +46,24 @@ export default function MenuScreen() {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.topBar}>
           <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-            <MaterialIcons name="arrow-back-ios" size={18} color="white" />
+            <MaterialIcons name="arrow-back-ios" size={18} color="#0f172a" />
           </Pressable>
           <Text style={styles.topTitle}>Menu Hub</Text>
           <View style={styles.backButton} />
         </View>
 
-        <LinearGradient colors={['#1111d4', '#0b0b14']} style={styles.heroCard}>
+        <LinearGradient colors={['#e0f2fe', '#ffffff']} style={styles.heroCard}>
           <Text style={styles.heroTitle}>Your Command Center</Text>
           <Text style={styles.heroSubtitle}>
-            Launch premium tools, automate trades, and keep risk under control.
+            Track markets, monitor funds, and stay informed in real time.
           </Text>
           <View style={styles.heroRow}>
             <View style={styles.heroChip}>
-              <MaterialIcons name="bolt" size={14} color="#0b0b14" />
+              <MaterialIcons name="bolt" size={14} color="#0f172a" />
               <Text style={styles.heroChipText}>Quick Actions</Text>
             </View>
             <View style={styles.heroChipOutline}>
-              <MaterialIcons name="verified" size={14} color="#8ba3ff" />
+              <MaterialIcons name="verified" size={14} color="#0ea5e9" />
               <Text style={styles.heroChipOutlineText}>Pro Tools</Text>
             </View>
           </View>
@@ -78,7 +78,7 @@ export default function MenuScreen() {
           {FEATURES.map((item) => (
             <Pressable key={item.title} style={styles.featureCard}>
               <View style={styles.featureIcon}>
-                <MaterialIcons name={item.icon} size={18} color="#8ba3ff" />
+                <MaterialIcons name={item.icon} size={18} color="#0ea5e9" />
               </View>
               <View style={styles.featureText}>
                 <Text style={styles.featureTitle}>{item.title}</Text>
@@ -96,7 +96,7 @@ export default function MenuScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#0a0a14'
+    backgroundColor: '#f8fafc'
   },
   scroll: {
     paddingBottom: 120
@@ -113,12 +113,12 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: '#f1f5f9',
     alignItems: 'center',
     justifyContent: 'center'
   },
   topTitle: {
-    color: 'white',
+    color: '#0f172a',
     fontSize: 18,
     fontFamily: 'Manrope_800ExtraBold'
   },
@@ -128,12 +128,12 @@ const styles = StyleSheet.create({
     padding: 18
   },
   heroTitle: {
-    color: 'white',
+    color: '#0f172a',
     fontSize: 20,
     fontFamily: 'Manrope_800ExtraBold'
   },
   heroSubtitle: {
-    color: 'rgba(255,255,255,0.7)',
+    color: '#475569',
     fontSize: 12,
     marginTop: 6,
     lineHeight: 18,
@@ -148,13 +148,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#8ba3ff',
+    backgroundColor: '#bae6fd',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999
   },
   heroChipText: {
-    color: '#0b0b14',
+    color: '#0f172a',
     fontSize: 11,
     fontFamily: 'Manrope_700Bold'
   },
@@ -163,13 +163,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     borderWidth: 1,
-    borderColor: 'rgba(139,163,255,0.45)',
+    borderColor: 'rgba(14, 165, 233, 0.4)',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999
   },
   heroChipOutlineText: {
-    color: '#8ba3ff',
+    color: '#0ea5e9',
     fontSize: 11,
     fontFamily: 'Manrope_700Bold'
   },
@@ -182,12 +182,12 @@ const styles = StyleSheet.create({
     marginBottom: 12
   },
   sectionTitle: {
-    color: 'white',
+    color: '#0f172a',
     fontSize: 16,
     fontFamily: 'Manrope_700Bold'
   },
   sectionTag: {
-    color: '#8ba3ff',
+    color: '#0ea5e9',
     fontSize: 11,
     fontFamily: 'Manrope_700Bold'
   },
@@ -201,15 +201,15 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 14,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: '#ffffff',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)'
+    borderColor: '#e2e8f0'
   },
   featureIcon: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: 'rgba(139,163,255,0.15)',
+    backgroundColor: 'rgba(14, 165, 233, 0.12)',
     alignItems: 'center',
     justifyContent: 'center'
   },
@@ -217,12 +217,12 @@ const styles = StyleSheet.create({
     flex: 1
   },
   featureTitle: {
-    color: 'white',
+    color: '#0f172a',
     fontSize: 14,
     fontFamily: 'Manrope_700Bold'
   },
   featureSubtitle: {
-    color: 'rgba(255,255,255,0.6)',
+    color: '#64748b',
     fontSize: 11,
     marginTop: 4,
     fontFamily: 'Manrope_500Medium'

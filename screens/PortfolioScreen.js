@@ -1,30 +1,89 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Image } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image, RefreshControl } from 'react-native';
 import Svg, { Path, Defs, LinearGradient as SvgGradient, Stop, Circle } from 'react-native-svg';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Screen from '../components/Screen';
+import { api } from '../api';
+import { useFocusEffect } from '@react-navigation/native';
 
 const COLORS = {
-  primary: '#1111d4',
-  background: '#101022',
-  card: '#191933',
-  muted: '#9292c9',
-  green: '#0bda68',
-  red: '#ff3b3b'
+  primary: '#0ea5e9',
+  background: '#f8fafc',
+  card: '#ffffff',
+  muted: '#64748b',
+  green: '#16a34a',
+  red: '#ef4444',
+  text: '#0f172a',
+  border: '#e2e8f0',
+  soft: '#f1f5f9'
 };
 
-const holdings = [
-  { symbol: 'AAPL', name: 'Apple Inc.', qty: '42.50', avg: '$178.20', price: '$192.42', pnl: '+$604.35', pnlTone: COLORS.green },
-  { symbol: 'BTC', name: 'Bitcoin', qty: '1.24', avg: '$42,100', price: '$64,281', pnl: '+12.4%', pnlTone: COLORS.green },
-  { symbol: 'TSLA', name: 'Tesla Motor', qty: '15.00', avg: '$215.10', price: '$184.92', pnl: '-$452.70', pnlTone: COLORS.red }
+const defaultHoldings = [
+  { symbol: 'RELIANCE', name: 'Reliance Industries', qty: '42.50', avg: '₹2,780.20', price: '₹2,945.42', pnl: '+4.2%', pnlTone: COLORS.green },
+  { symbol: 'HDFCBANK', name: 'HDFC Bank', qty: '15.00', avg: '₹1,420.10', price: '₹1,452.92', pnl: '+2.1%', pnlTone: COLORS.green },
+  { symbol: 'TCS', name: 'Tata Consultancy Services', qty: '8.00', avg: '₹3,810.10', price: '₹3,780.92', pnl: '-0.8%', pnlTone: COLORS.red }
 ];
 
 export default function PortfolioScreen() {
   const navigation = useNavigation();
+  const [holdings, setHoldings] = useState(defaultHoldings);
+  const [summary, setSummary] = useState({ balance: '₹0.00', delta: '+0.00%' });
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadData = React.useCallback(async () => {
+    const stocksData = await api.getStocks();
+    if (!stocksData.length) {
+      return;
+    }
+
+    const mapped = stocksData.slice(0, 3).map((item) => {
+      const change = Number(item.changePercent || 0);
+      return {
+        symbol: String(item.symbol).replace('.BSE', ''),
+        name: item.name || item.symbol,
+        qty: '1.00',
+        avg: `₹${Number(item.open || item.price).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`,
+        price: `₹${Number(item.price).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`,
+        pnl: `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`,
+        pnlTone: change >= 0 ? COLORS.green : COLORS.red
+      };
+    });
+
+    const totalValue = stocksData.reduce((sum, item) => sum + Number(item.price || 0), 0);
+    const avgChange = stocksData.reduce((sum, item) => sum + Number(item.changePercent || 0), 0) / stocksData.length;
+
+    setHoldings(mapped);
+    setSummary({
+      balance: `₹${Number(totalValue).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`,
+      delta: `${avgChange >= 0 ? '+' : ''}${avgChange.toFixed(2)}%`
+    });
+  }, []);
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  }, [loadData]);
+
+  useEffect(() => {
+    loadData();
+    const intervalId = setInterval(loadData, 60 * 1000);
+    return () => clearInterval(intervalId);
+  }, [loadData]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
   return (
     <Screen style={styles.root}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
+      >
         <View style={styles.topNav}>
           <View style={styles.navLeft}>
             <View style={styles.navBadge}>
@@ -37,26 +96,26 @@ export default function PortfolioScreen() {
           </View>
           <View style={styles.navRight}>
             <Pressable style={styles.navIcon} onPress={() => navigation.navigate('Analytics')}>
-              <MaterialIcons name="analytics" size={18} color="white" />
+              <MaterialIcons name="analytics" size={18} color={COLORS.text} />
             </Pressable>
             <Pressable style={styles.navIcon}>
-              <MaterialIcons name="search" size={18} color="white" />
+              <MaterialIcons name="search" size={18} color={COLORS.text} />
             </Pressable>
             <Pressable style={styles.navIcon}>
-              <MaterialIcons name="notifications" size={18} color="white" />
+              <MaterialIcons name="notifications" size={18} color={COLORS.text} />
             </Pressable>
           </View>
         </View>
 
         <View style={styles.balanceCard}>
           <View style={styles.balanceIcon}>
-            <MaterialIcons name="show-chart" size={40} color="rgba(255,255,255,0.2)" />
+            <MaterialIcons name="show-chart" size={40} color="rgba(14, 165, 233, 0.2)" />
           </View>
           <Text style={styles.balanceLabel}>Total Balance</Text>
           <View style={styles.balanceRow}>
-            <Text style={styles.balanceValue}>$248,192.45</Text>
+            <Text style={styles.balanceValue}>{summary.balance}</Text>
             <View style={styles.balanceBadge}>
-              <Text style={styles.balanceBadgeText}>+4.2%</Text>
+              <Text style={styles.balanceBadgeText}>{summary.delta}</Text>
             </View>
           </View>
           <View style={styles.sparklineWrap}>
@@ -90,7 +149,7 @@ export default function PortfolioScreen() {
           <View style={styles.allocationCard}>
             <View style={styles.donutWrap}>
               <Svg width="100%" height="100%" viewBox="0 0 36 36">
-                <Circle cx="18" cy="18" r="15.9" stroke="#232348" strokeWidth="3.5" fill="transparent" />
+                <Circle cx="18" cy="18" r="15.9" stroke={COLORS.border} strokeWidth="3.5" fill="transparent" />
                 <Circle cx="18" cy="18" r="15.9" stroke={COLORS.primary} strokeWidth="3.5" fill="transparent" strokeDasharray="60 100" strokeLinecap="round" />
                 <Circle cx="18" cy="18" r="15.9" stroke={COLORS.green} strokeWidth="3.5" fill="transparent" strokeDasharray="25 100" strokeDashoffset="-60" strokeLinecap="round" />
                 <Circle cx="18" cy="18" r="15.9" stroke="#ffb800" strokeWidth="3.5" fill="transparent" strokeDasharray="15 100" strokeDashoffset="-85" strokeLinecap="round" />
@@ -152,7 +211,7 @@ export default function PortfolioScreen() {
         ))}
       </ScrollView>
       <Pressable style={styles.fab}>
-        <MaterialIcons name="add" size={26} color="white" />
+        <MaterialIcons name="add" size={26} color="#ffffff" />
       </Pressable>
     </Screen>
   );
@@ -183,14 +242,14 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(17,17,212,0.2)',
+    backgroundColor: 'rgba(14, 165, 233, 0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(17,17,212,0.4)',
+    borderColor: 'rgba(14, 165, 233, 0.3)',
     alignItems: 'center',
     justifyContent: 'center'
   },
   navTitle: {
-    color: 'white',
+    color: COLORS.text,
     fontSize: 14,
     fontFamily: 'Manrope_600SemiBold'
   },
@@ -206,7 +265,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: COLORS.soft,
     alignItems: 'center',
     justifyContent: 'center'
   },
@@ -214,9 +273,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     borderRadius: 16,
     padding: 16,
-    backgroundColor: 'rgba(25,25,51,0.7)',
+    backgroundColor: COLORS.card,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: COLORS.border,
     marginBottom: 20
   },
   balanceIcon: {
@@ -235,7 +294,7 @@ const styles = StyleSheet.create({
     marginTop: 8
   },
   balanceValue: {
-    color: 'white',
+    color: COLORS.text,
     fontSize: 26,
     fontFamily: 'Manrope_800ExtraBold'
   },
@@ -264,7 +323,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
-    backgroundColor: 'rgba(255,255,255,0.05)'
+    backgroundColor: COLORS.soft
   },
   rangeChipActive: {
     backgroundColor: COLORS.primary
@@ -275,7 +334,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Manrope_700Bold'
   },
   rangeTextActive: {
-    color: 'white'
+    color: '#ffffff'
   },
   liveText: {
     color: COLORS.muted,
@@ -293,7 +352,7 @@ const styles = StyleSheet.create({
     marginBottom: 12
   },
   sectionTitle: {
-    color: 'white',
+    color: COLORS.text,
     fontSize: 16,
     fontFamily: 'Manrope_700Bold'
   },
@@ -302,9 +361,9 @@ const styles = StyleSheet.create({
     gap: 16,
     padding: 14,
     borderRadius: 14,
-    backgroundColor: 'rgba(25,25,51,0.5)',
+    backgroundColor: COLORS.card,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)'
+    borderColor: COLORS.border
   },
   donutWrap: {
     width: 110,
@@ -325,7 +384,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase'
   },
   donutValue: {
-    color: 'white',
+    color: COLORS.text,
     fontFamily: 'Manrope_700Bold'
   },
   legendCol: {
@@ -348,7 +407,7 @@ const styles = StyleSheet.create({
     fontSize: 12
   },
   legendValue: {
-    color: 'white',
+    color: COLORS.text,
     fontFamily: 'Manrope_700Bold'
   },
   holdingsHeader: {
@@ -384,9 +443,9 @@ const styles = StyleSheet.create({
     marginTop: 10,
     padding: 12,
     borderRadius: 12,
-    backgroundColor: 'rgba(25,25,51,0.5)',
+    backgroundColor: COLORS.card,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: COLORS.border,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between'
@@ -401,17 +460,17 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: COLORS.soft,
     alignItems: 'center',
     justifyContent: 'center'
   },
   assetSymbol: {
-    color: 'white',
+    color: COLORS.text,
     fontFamily: 'Manrope_700Bold',
     fontSize: 10
   },
   assetName: {
-    color: 'white',
+    color: COLORS.text,
     fontSize: 12,
     fontFamily: 'Manrope_700Bold'
   },
@@ -423,7 +482,7 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   qtyValue: {
-    color: 'white',
+    color: COLORS.text,
     fontSize: 11,
     fontFamily: 'Manrope_700Bold'
   },
@@ -432,7 +491,7 @@ const styles = StyleSheet.create({
     fontSize: 10
   },
   priceCell: {
-    color: 'white',
+    color: COLORS.text,
     fontSize: 11,
     fontFamily: 'Manrope_700Bold'
   },

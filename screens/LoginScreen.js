@@ -5,7 +5,7 @@ import { styles, COLORS } from '../styles';
 import { api } from '../api';
 
 export default function LoginScreen({ onLogin }) {
-  const [email, setEmail] = useState('trader@proterminal.com');
+  const [email, setEmail] = useState('user@marketpulse.com');
   const [password, setPassword] = useState('password123');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -24,16 +24,16 @@ export default function LoginScreen({ onLogin }) {
           <Activity size={36} color={COLORS.primary} />
         </View>
         <Text style={styles.loginTitle}>PROTRADER</Text>
-        <Text style={styles.loginSubtitle}>Institutional-grade trading terminal</Text>
+        <Text style={styles.loginSubtitle}>Market intelligence hub</Text>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Email Terminal ID</Text>
+          <Text style={styles.inputLabel}>Email ID</Text>
           <View style={styles.inputRow}>
             <Mail size={18} color={COLORS.muted} />
             <TextInput
               value={email}
               onChangeText={setEmail}
-              placeholder="terminal-88@pro.com"
+              placeholder="market-88@pro.com"
               placeholderTextColor={COLORS.muted}
               style={styles.input}
               autoCapitalize="none"
@@ -43,7 +43,7 @@ export default function LoginScreen({ onLogin }) {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Secure Passkey</Text>
+          <Text style={styles.inputLabel}>Secure Passcode</Text>
           <View style={styles.inputRow}>
             <Lock size={18} color={COLORS.muted} />
             <TextInput
@@ -61,10 +61,10 @@ export default function LoginScreen({ onLogin }) {
         </View>
 
         <Pressable style={styles.primaryButton} onPress={handleSubmit}>
-          <Text style={styles.primaryButtonText}>{loading ? 'CONNECTING...' : 'CONNECT TO TERMINAL'}</Text>
+          <Text style={styles.primaryButtonText}>{loading ? 'CONNECTING...' : 'ENTER DASHBOARD'}</Text>
         </Pressable>
         <Pressable>
-          <Text style={styles.linkText}>Request Terminal Access</Text>
+          <Text style={styles.linkText}>Request Access</Text>
         </Pressable>
       </View>
     </View>

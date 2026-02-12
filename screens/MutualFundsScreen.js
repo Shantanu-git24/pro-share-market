@@ -1,23 +1,26 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, Image } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, ScrollView, Pressable, StyleSheet, Image, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import Screen from '../components/Screen';
+import { api } from '../api';
 
 const COLORS = {
-    primary: '#13ecec',
-    background: '#0a1414',
-    card: '#162a2a',
-    gold: '#d4af37',
-    success: '#39ff14',
+    primary: '#0ea5e9',
+    background: '#f8fafc',
+    card: '#ffffff',
+    gold: '#b45309',
+    success: '#16a34a',
     danger: '#ef4444',
-    text: '#ffffff',
-    muted: 'rgba(255,255,255,0.6)',
-    border: 'rgba(19,236,236,0.12)'
+    warning: '#f59e0b',
+    text: '#0f172a',
+    muted: '#64748b',
+    border: '#e2e8f0',
+    soft: '#f1f5f9'
 };
 
-const indices = [
+const defaultIndices = [
     { label: 'NIFTY 50', value: '22,038.40', change: '+184.20 (0.84%)', up: true },
     { label: 'SENSEX', value: '72,540.30', change: '+560.15 (0.78%)', up: true },
     { label: 'BANK NIFTY', value: '47,215.10', change: '-112.45 (0.24%)', up: false }
@@ -68,7 +71,7 @@ const metals = [
     }
 ];
 
-const funds = [
+const defaultFunds = [
     {
         name: 'Quant Active Fund',
         category: 'Multi Cap',
@@ -105,21 +108,87 @@ const funds = [
 
 const segments = ['Stocks', 'MFs', 'Metals', 'Indices'];
 
+const formatNumber = (value, digits = 2) => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return '--';
+    }
+    return Number(value).toLocaleString('en-IN', {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits
+    });
+};
+
 export default function MutualFundsScreen() {
     const navigation = useNavigation();
     const [activeSegment, setActiveSegment] = useState('MFs');
+    const [indices, setIndices] = useState(defaultIndices);
+    const [funds, setFunds] = useState(defaultFunds);
+    const [refreshing, setRefreshing] = useState(false);
+
+    const loadData = React.useCallback(async () => {
+        const [indicesData, fundsData] = await Promise.all([
+            api.getIndices(),
+            api.getMutualFunds()
+        ]);
+
+        if (indicesData.length) {
+            setIndices(
+                indicesData.map((item) => ({
+                    label: item.label,
+                    value: formatNumber(item.price),
+                    change: `${item.change >= 0 ? '+' : ''}${formatNumber(item.change)} (${formatNumber(item.changePercent, 2)}%)`,
+                    up: item.change >= 0
+                }))
+            );
+        }
+
+        if (fundsData.length) {
+            setFunds(
+                fundsData.map((fund, index) => ({
+                    name: fund.name,
+                    category: `NAV ₹${formatNumber(fund.nav)}`,
+                    return: `${fund.returnPercent ? formatNumber(fund.returnPercent, 1) : formatNumber(fund.changePercent, 2)}%`,
+                    icon: index % 2 === 0 ? 'trending-up' : 'shield',
+                    accent: index % 2 === 0 ? COLORS.primary : COLORS.gold,
+                    chip: index % 2 === 0 ? 'rgba(14,165,233,0.12)' : 'rgba(180,83,9,0.12)'
+                }))
+            );
+        }
+    }, []);
+
+    const onRefresh = React.useCallback(async () => {
+        setRefreshing(true);
+        await loadData();
+        setRefreshing(false);
+    }, [loadData]);
+
+    useEffect(() => {
+        loadData();
+        const intervalId = setInterval(loadData, 60 * 1000);
+        return () => clearInterval(intervalId);
+    }, [loadData]);
+
+    useFocusEffect(
+        React.useCallback(() => {
+            loadData();
+        }, [loadData])
+    );
 
     return (
         <Screen style={styles.root}>
-            <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+            <ScrollView
+                contentContainerStyle={styles.scroll}
+                showsVerticalScrollIndicator={false}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
+            >
                 <View style={styles.header}>
                     <View style={styles.headerLeft}>
                         <View style={styles.headerIcon}>
-                            <MaterialIcons name="account-balance-wallet" size={18} color={COLORS.primary} />
+                            <MaterialIcons name="insights" size={18} color={COLORS.primary} />
                         </View>
                         <View>
-                            <Text style={styles.headerLabel}>Invested Value</Text>
-                            <Text style={styles.headerValue}>₹14,82,450.00</Text>
+                            <Text style={styles.headerLabel}>Mutual Funds Center</Text>
+                            <Text style={styles.headerValue}>Latest MF insights & flows</Text>
                         </View>
                     </View>
                     <View style={styles.headerActions}>
@@ -187,37 +256,6 @@ export default function MutualFundsScreen() {
                             </Pressable>
                         );
                     })}
-                </View>
-
-                <View style={styles.portfolioCard}>
-                    <LinearGradient
-                        colors={[COLORS.card, COLORS.background]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={styles.portfolioGradient}
-                    >
-                        <View style={styles.portfolioGlow} />
-                        <View style={styles.portfolioHeader}>
-                            <View>
-                                <Text style={styles.portfolioLabel}>Day's Profit</Text>
-                                <Text style={styles.portfolioValue}>+ ₹12,840.40</Text>
-                            </View>
-                            <View style={styles.portfolioBadge}>
-                                <MaterialIcons name="arrow-upward" size={12} color={COLORS.success} />
-                                <Text style={styles.portfolioBadgeText}>3.2%</Text>
-                            </View>
-                        </View>
-                        <View style={styles.portfolioGrid}>
-                            <View style={styles.portfolioMiniCard}>
-                                <Text style={styles.portfolioMiniLabel}>Today's Returns</Text>
-                                <Text style={styles.portfolioMiniValue}>+ ₹4,210</Text>
-                            </View>
-                            <View style={styles.portfolioMiniCard}>
-                                <Text style={styles.portfolioMiniLabel}>Available Cash</Text>
-                                <Text style={styles.portfolioMiniValue}>₹85,140</Text>
-                            </View>
-                        </View>
-                    </LinearGradient>
                 </View>
 
                 <View style={styles.sectionHeader}>
@@ -337,24 +375,24 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: 'rgba(19,236,236,0.2)',
+        backgroundColor: 'rgba(14, 165, 233, 0.12)',
         borderWidth: 1,
-        borderColor: 'rgba(19,236,236,0.3)',
+        borderColor: 'rgba(14, 165, 233, 0.3)',
         alignItems: 'center',
         justifyContent: 'center'
     },
     headerLabel: {
-        color: 'rgba(255,255,255,0.5)',
-        fontSize: 10,
+        color: COLORS.muted,
+        fontSize: 11,
         fontFamily: 'Manrope_700Bold',
         textTransform: 'uppercase',
         letterSpacing: 1
     },
     headerValue: {
         color: COLORS.text,
-        fontSize: 20,
-        fontFamily: 'Manrope_800ExtraBold',
-        marginTop: 2
+        fontSize: 14,
+        fontFamily: 'Manrope_700Bold',
+        marginTop: 4
     },
     headerActions: {
         flexDirection: 'row',
@@ -364,9 +402,9 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: 'rgba(22,42,42,0.6)',
+        backgroundColor: COLORS.card,
         borderWidth: 1,
-        borderColor: 'rgba(19,236,236,0.12)',
+        borderColor: COLORS.border,
         alignItems: 'center',
         justifyContent: 'center'
     },
@@ -390,13 +428,13 @@ const styles = StyleSheet.create({
         width: 150,
         borderRadius: 16,
         padding: 12,
-        backgroundColor: 'rgba(22,42,42,0.6)',
+        backgroundColor: COLORS.card,
         borderWidth: 1,
-        borderColor: 'rgba(19,236,236,0.12)',
+        borderColor: COLORS.border,
         borderLeftWidth: 3
     },
     tickerLabel: {
-        color: 'rgba(255,255,255,0.55)',
+        color: COLORS.muted,
         fontSize: 10,
         fontFamily: 'Manrope_700Bold'
     },
@@ -418,12 +456,14 @@ const styles = StyleSheet.create({
     },
     segmentedControl: {
         flexDirection: 'row',
-        backgroundColor: 'rgba(22,42,42,0.6)',
+        backgroundColor: COLORS.card,
         borderRadius: 14,
         marginHorizontal: 20,
         padding: 4,
         gap: 4,
-        marginBottom: 18
+        marginBottom: 18,
+        borderWidth: 1,
+        borderColor: COLORS.border
     },
     segmentChip: {
         flex: 1,
@@ -439,12 +479,12 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 6 }
     },
     segmentText: {
-        color: 'rgba(255,255,255,0.5)',
+        color: COLORS.muted,
         fontSize: 11,
         fontFamily: 'Manrope_700Bold'
     },
     segmentTextActive: {
-        color: COLORS.background
+        color: '#ffffff'
     },
     portfolioCard: {
         marginHorizontal: 20,
@@ -556,7 +596,7 @@ const styles = StyleSheet.create({
         fontFamily: 'Manrope_700Bold'
     },
     sectionMeta: {
-        color: 'rgba(255,255,255,0.45)',
+        color: COLORS.muted,
         fontSize: 10,
         fontFamily: 'Manrope_700Bold'
     },
@@ -571,7 +611,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         padding: 16,
         borderRadius: 18,
-        backgroundColor: 'rgba(22,42,42,0.6)',
+        backgroundColor: COLORS.card,
         borderWidth: 1,
         borderColor: COLORS.border,
         borderLeftWidth: 2,
@@ -602,7 +642,7 @@ const styles = StyleSheet.create({
         fontFamily: 'Manrope_800ExtraBold'
     },
     gainerName: {
-        color: 'rgba(255,255,255,0.45)',
+        color: COLORS.muted,
         fontSize: 10,
         fontFamily: 'Manrope_500Medium'
     },
@@ -629,9 +669,9 @@ const styles = StyleSheet.create({
         flex: 1,
         borderRadius: 18,
         padding: 16,
-        backgroundColor: 'rgba(22,42,42,0.6)',
+        backgroundColor: COLORS.card,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)'
+        borderColor: COLORS.border
     },
     metalIconWrap: {
         position: 'absolute',
@@ -656,7 +696,7 @@ const styles = StyleSheet.create({
         marginTop: 8
     },
     metalUnit: {
-        color: 'rgba(255,255,255,0.5)',
+        color: COLORS.muted,
         fontSize: 10,
         fontFamily: 'Manrope_500Medium',
         marginTop: 4
@@ -675,7 +715,7 @@ const styles = StyleSheet.create({
         width: 48,
         height: 8,
         borderRadius: 6,
-        backgroundColor: 'rgba(255,255,255,0.08)',
+        backgroundColor: COLORS.soft,
         alignItems: 'center',
         justifyContent: 'center'
     },
@@ -697,9 +737,9 @@ const styles = StyleSheet.create({
         minHeight: 172,
         borderRadius: 16,
         padding: 16,
-        backgroundColor: 'rgba(17,17,212,0.12)',
+        backgroundColor: 'rgba(14, 165, 233, 0.12)',
         borderWidth: 1,
-        borderColor: 'rgba(17,17,212,0.2)'
+        borderColor: 'rgba(14, 165, 233, 0.2)'
     },
     mfIconWrap: {
         width: 32,
@@ -716,7 +756,7 @@ const styles = StyleSheet.create({
         lineHeight: 16
     },
     mfCategory: {
-        color: 'rgba(255,255,255,0.45)',
+        color: COLORS.muted,
         fontSize: 9,
         fontFamily: 'Manrope_700Bold',
         textTransform: 'uppercase',
@@ -727,7 +767,7 @@ const styles = StyleSheet.create({
         marginTop: 16
     },
     mfReturnLabel: {
-        color: 'rgba(255,255,255,0.4)',
+        color: COLORS.muted,
         fontSize: 9,
         fontFamily: 'Manrope_500Medium'
     },
@@ -738,7 +778,7 @@ const styles = StyleSheet.create({
         marginTop: 6
     },
     mfReturnUnit: {
-        color: 'rgba(255,255,255,0.5)',
+        color: COLORS.muted,
         fontSize: 9,
         fontFamily: 'Manrope_500Medium'
     }

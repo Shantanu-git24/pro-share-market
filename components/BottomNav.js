@@ -25,7 +25,11 @@ export default function BottomNav({ activeTab, onChange }) {
           >
             {isActive && <View style={styles.navActiveHalo} />}
             <View style={[styles.navIconWrap, isActive && styles.navIconWrapActive]}>
-              <Icon size={20} color={isActive ? 'white' : 'white'} strokeWidth={isActive ? 2.5 : 2} />
+              <Icon
+                size={20}
+                color={isActive ? '#ffffff' : COLORS.text}
+                strokeWidth={isActive ? 2.5 : 2}
+              />
             </View>
             <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>{tab.label}</Text>
             {isActive && <View style={styles.navActiveDot} />}

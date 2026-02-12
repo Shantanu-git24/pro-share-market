@@ -1,17 +1,23 @@
-import React from 'react';
-import { ScrollView, View, Text, StyleSheet, Image, Pressable } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ScrollView, View, Text, StyleSheet, Image, Pressable, RefreshControl } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
+import { useFocusEffect } from '@react-navigation/native';
+import { api } from '../api';
 
 const COLORS = {
-  primary: '#1111d4',
-  background: '#101022',
-  muted: '#9292c9',
-  bullish: '#10b981',
-  bearish: '#ef4444'
+  primary: '#0ea5e9',
+  background: '#f8fafc',
+  muted: '#64748b',
+  bullish: '#16a34a',
+  bearish: '#ef4444',
+  text: '#0f172a',
+  card: '#ffffff',
+  border: '#e2e8f0',
+  soft: '#f1f5f9'
 };
 
-const stories = [
+const defaultStories = [
   { title: 'CPI Data', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC40nHZ7yYVrc0MHtLOVVfJLSwDHXqdlrLXY0HhGfJOZs9T7FeWRwIVfY3jtx_-tqW-jF3rmAahLTaB7iMAUtU63CKgk4TSvmK0zbk4hrUmznqyZfNIS4G77kuGoGHL65v6gX_VVG_GJ5f2eNUz0pxmkfhs0wgOZXABI3R18IeAC9Y_HoHbthPAuzL9CCaRbH5zyzK_PrX7rHZBhbgWGfXLPDC4c2yH2wdDk4yeHWhCEq0xUyPcbyZk0oQtk_G5KiDLUi1Bggdfri8' },
   { title: 'Fed Meeting', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCY3PqTQ42GYMEg88kVh37-Os0UmVi5E42f_EUB55uLhj6pDEPosAKGa8Y8xBTjgWyC26obpMs88X6qcuOEGVI9cjrHzJSeNW095yBOMPKPNIItisnUULDvHyqzOp-z4xYQAksfCsiyvlaeRNgTR9hCMO8DAmOpRWLGvNwG2wpGnZbeor2-USgJXIcV-C8zkhM9Zoa_lwIDg2gEmVQk1rvlqOF5zc3QYg3JhNf8tVTrpFjwCdEkVw5juqhAZIMRqwkv8tX3vzaP8kE' },
   { title: 'NVDA Split', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBtiRyfkt3BTr2F2XcKLknZRKPy575bacVZOn803klWV9ulNWcwLZBIbf4gjbikKvl9WmwFLI5X1VxRLBNfZchC0srMTxBqPPGgpd7zz-3cCzrWIYmJuhLxHO4OSf2iwKQJ5hrJrGY6SF4NRojrKtAPoq8RIiDiC77g0LOWXeYcjgqM8mZBGTDd-jQd3mbkykbND92wmRdS11jKTPuvArHXQCaVeHpEXpiaa2NTrsiovkGZfYYuP7U-VBajv32G7EjWt_roO0CjmO4' },
@@ -19,14 +25,14 @@ const stories = [
   { title: 'Brent Crude', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBqtHEGtvWXZq5E-2RNTJorCJIIiadB0R1qEvfZAzoJ1w59VTJU0ZdYzXcp_J4l0-2-KMbwj1pQvFSqA56u5QGruzQxElFdYIsSSRir4Y0zVZ6fflMD3iqYJbZFs4KABSNfGXZzpzg0nKN_ROK3NJXgPUg3Z9uNPthxdd4qE7ITDpQ8yVvkFG7G8x8UbQtGDTOdDPwWg05r8FuPrRYSy2eHzqO1FmbXKDX-YLsOtdiklyzvPcFgnqcn4rf8vFm2J0E81jQPffKOzGU' }
 ];
 
-const trendingTickers = [
+const defaultTrendingTickers = [
   { symbol: '$BTC', change: '+4.2%', tone: COLORS.bullish },
   { symbol: '$AAPL', change: '-1.2%', tone: COLORS.bearish },
   { symbol: '$TSLA', change: '+0.8%', tone: COLORS.bullish },
   { symbol: '$ETH', change: '+2.1%', tone: COLORS.bullish }
 ];
 
-const newsCards = [
+const defaultNewsCards = [
   {
     id: 1,
     title: 'US Labor Market Shows Resilience with Unexpected Job Gains',
@@ -47,19 +53,87 @@ const newsCards = [
   }
 ];
 
-const trendingMentions = [
+const defaultTrendingMentions = [
   { rank: '01', symbol: '$NVDA', mentions: '2.4k Mentions/hr', change: '+5.42%', bar: 0.75, tone: COLORS.bullish },
   { rank: '02', symbol: '$AAPL', mentions: '1.8k Mentions/hr', change: '-0.85%', bar: 0.4, tone: COLORS.bearish }
 ];
 
 export default function NewsScreen() {
+  const [stories] = useState(defaultStories);
+  const [trendingTickers, setTrendingTickers] = useState(defaultTrendingTickers);
+  const [newsCards, setNewsCards] = useState(defaultNewsCards);
+  const [trendingMentions, setTrendingMentions] = useState(defaultTrendingMentions);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadData = React.useCallback(async () => {
+    const [newsData, stocksData] = await Promise.all([
+      api.getNews(),
+      api.getStocks()
+    ]);
+
+    if (newsData.length) {
+      setNewsCards(
+        newsData.slice(0, 6).map((item, index) => ({
+          id: item.id || `news-${index}`,
+          title: item.title,
+          category: item.category || 'Market',
+          time: item.time,
+          sentiment: item.sentiment || 'bullish',
+          image: item.imageUrl,
+          source: item.source
+        }))
+      );
+    }
+
+    if (stocksData.length) {
+      const tickers = stocksData.slice(0, 4).map((stock) => ({
+        symbol: stock.symbol.replace('.BSE', ''),
+        change: `${stock.changePercent >= 0 ? '+' : ''}${Number(stock.changePercent).toFixed(2)}%`,
+        tone: stock.changePercent >= 0 ? COLORS.bullish : COLORS.bearish
+      }));
+      setTrendingTickers(tickers);
+
+      const mentions = stocksData.slice(0, 2).map((stock, index) => ({
+        rank: `0${index + 1}`,
+        symbol: stock.symbol.replace('.BSE', ''),
+        mentions: `${Math.round(Math.abs(stock.changePercent) * 350 + 600)} Mentions/hr`,
+        change: `${stock.changePercent >= 0 ? '+' : ''}${Number(stock.changePercent).toFixed(2)}%`,
+        bar: Math.min(1, Math.abs(stock.changePercent) / 6),
+        tone: stock.changePercent >= 0 ? COLORS.bullish : COLORS.bearish
+      }));
+      setTrendingMentions(mentions);
+    }
+  }, []);
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  }, [loadData]);
+
+  useEffect(() => {
+    loadData();
+    const intervalId = setInterval(loadData, 60 * 1000);
+    return () => clearInterval(intervalId);
+  }, [loadData]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
+
   return (
     <Screen style={styles.root}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
+      >
       <View style={styles.nav}>
         <View style={styles.navLeft}>
           <View style={styles.navBadge}>
-            <MaterialIcons name="analytics" size={18} color="white" />
+            <MaterialIcons name="analytics" size={18} color={COLORS.primary} />
           </View>
           <View>
             <Text style={styles.navTitle}>TERMINAL</Text>
@@ -68,7 +142,7 @@ export default function NewsScreen() {
         </View>
         <View style={styles.navRight}>
           <Pressable style={styles.navIcon}>
-            <MaterialIcons name="search" size={18} color="#94a3b8" />
+            <MaterialIcons name="search" size={18} color={COLORS.muted} />
           </Pressable>
           <View style={styles.navAvatar} />
         </View>
@@ -114,7 +188,7 @@ export default function NewsScreen() {
           <View key={item.id} style={styles.newsCard}>
             <Image source={{ uri: item.image }} style={styles.newsImage} />
             <View style={[styles.sentimentTag, item.sentiment === 'bullish' ? styles.tagBullish : styles.tagBearish]}>
-              <MaterialIcons name={item.sentiment === 'bullish' ? 'trending-up' : 'trending-down'} size={12} color="white" />
+                <MaterialIcons name={item.sentiment === 'bullish' ? 'trending-up' : 'trending-down'} size={12} color="#ffffff" />
               <Text style={styles.sentimentText}>{item.sentiment.toUpperCase()}</Text>
             </View>
             <View style={styles.newsBody}>
@@ -128,7 +202,7 @@ export default function NewsScreen() {
                   <View style={styles.sourceDot} />
                   <Text style={styles.sourceText}>{item.source}</Text>
                 </View>
-                <MaterialIcons name="bookmark" size={18} color="#94a3b8" />
+                <MaterialIcons name="bookmark" size={18} color={COLORS.muted} />
               </View>
             </View>
           </View>
@@ -175,7 +249,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.08)'
+    borderBottomColor: COLORS.border
   },
   navLeft: {
     flexDirection: 'row',
@@ -186,17 +260,17 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: COLORS.primary,
+    backgroundColor: 'rgba(14, 165, 233, 0.12)',
     alignItems: 'center',
     justifyContent: 'center'
   },
   navTitle: {
-    color: 'white',
+    color: COLORS.text,
     fontSize: 16,
     fontFamily: 'Manrope_800ExtraBold'
   },
   navSubtitle: {
-    color: COLORS.primary,
+    color: COLORS.muted,
     fontSize: 10,
     textTransform: 'uppercase',
     fontFamily: 'Manrope_700Bold'
@@ -208,15 +282,16 @@ const styles = StyleSheet.create({
   },
   navIcon: {
     padding: 6,
-    borderRadius: 18
+    borderRadius: 18,
+    backgroundColor: COLORS.soft
   },
   navAvatar: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#475569',
+    backgroundColor: COLORS.soft,
     borderWidth: 2,
-    borderColor: 'rgba(17,17,212,0.4)'
+    borderColor: 'rgba(14, 165, 233, 0.3)'
   },
   sectionRow: {
     flexDirection: 'row',
@@ -226,7 +301,7 @@ const styles = StyleSheet.create({
     paddingTop: 12
   },
   sectionLabel: {
-    color: '#94a3b8',
+    color: COLORS.muted,
     fontSize: 12,
     textTransform: 'uppercase',
     fontFamily: 'Manrope_700Bold'
@@ -259,7 +334,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)'
+    borderColor: COLORS.border
   },
   storyImage: {
     width: '100%',
@@ -294,12 +369,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: COLORS.card,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)'
+    borderColor: COLORS.border
   },
   tickerSymbol: {
-    color: 'white',
+    color: COLORS.text,
     fontSize: 12,
     fontFamily: 'Manrope_700Bold'
   },
@@ -316,15 +391,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: COLORS.card,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)'
+    borderColor: COLORS.border
   },
   categoryChipActive: {
     backgroundColor: COLORS.primary
   },
   categoryText: {
-    color: '#cbd5f5',
+    color: COLORS.muted,
     fontSize: 11,
     fontFamily: 'Manrope_600SemiBold'
   },
@@ -339,7 +414,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)'
+    borderColor: COLORS.border
   },
   newsImage: {
     width: '100%',
@@ -369,7 +444,7 @@ const styles = StyleSheet.create({
   },
   newsBody: {
     padding: 14,
-    backgroundColor: 'rgba(255,255,255,0.04)'
+    backgroundColor: COLORS.card
   },
   newsMeta: {
     flexDirection: 'row',
@@ -383,11 +458,11 @@ const styles = StyleSheet.create({
     fontFamily: 'Manrope_700Bold'
   },
   newsTime: {
-    color: '#94a3b8',
+    color: COLORS.muted,
     fontSize: 10
   },
   newsHeadline: {
-    color: 'white',
+    color: COLORS.text,
     fontSize: 16,
     fontFamily: 'Manrope_700Bold',
     marginTop: 6
@@ -407,14 +482,14 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: '#475569'
+    backgroundColor: COLORS.soft
   },
   sourceText: {
-    color: 'white',
+    color: COLORS.text,
     fontFamily: 'Manrope_600SemiBold'
   },
   trendingTitle: {
-    color: 'white',
+    color: COLORS.text,
     fontSize: 16,
     fontFamily: 'Manrope_700Bold',
     paddingHorizontal: 16,
@@ -429,11 +504,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: COLORS.card,
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)'
+    borderColor: COLORS.border
   },
   trendingLeft: {
     flexDirection: 'row',
@@ -441,16 +516,16 @@ const styles = StyleSheet.create({
     gap: 10
   },
   trendingRank: {
-    color: '#94a3b8',
+    color: COLORS.muted,
     fontSize: 16,
     fontFamily: 'Manrope_700Bold'
   },
   trendingSymbol: {
-    color: 'white',
+    color: COLORS.text,
     fontFamily: 'Manrope_700Bold'
   },
   trendingMentions: {
-    color: '#94a3b8',
+    color: COLORS.muted,
     fontSize: 10
   },
   trendingRight: {
@@ -464,7 +539,7 @@ const styles = StyleSheet.create({
   trendingBar: {
     width: 60,
     height: 6,
-    backgroundColor: 'rgba(17,17,212,0.1)',
+    backgroundColor: 'rgba(14, 165, 233, 0.12)',
     borderRadius: 999
   },
   trendingFill: {

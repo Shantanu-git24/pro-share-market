@@ -4,16 +4,18 @@ import { MaterialIcons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 
 const COLORS = {
-  primary: '#0df20d',
-  background: '#0a0f0a',
-  card: '#161d16',
-  muted: 'rgba(13, 242, 13, 0.7)'
+  primary: '#0ea5e9',
+  background: '#f8fafc',
+  card: '#ffffff',
+  muted: '#64748b',
+  text: '#0f172a',
+  border: '#e2e8f0',
+  soft: '#f1f5f9'
 };
 
 export default function ProfileScreen() {
   const [twoFactor, setTwoFactor] = useState(true);
   const [biometric, setBiometric] = useState(true);
-  const [oneTap, setOneTap] = useState(false);
   const [alerts, setAlerts] = useState(true);
   const [reports, setReports] = useState(true);
 
@@ -22,11 +24,11 @@ export default function ProfileScreen() {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
       <View style={styles.topBar}>
         <Pressable style={styles.backButton}>
-          <MaterialIcons name="arrow-back-ios" size={20} color="white" />
+          <MaterialIcons name="arrow-back-ios" size={20} color={COLORS.text} />
         </Pressable>
         <Text style={styles.topTitle}>Profile & Settings</Text>
         <Pressable style={styles.settingsButton}>
-          <MaterialIcons name="settings" size={20} color="white" />
+          <MaterialIcons name="settings" size={20} color={COLORS.text} />
         </Pressable>
       </View>
 
@@ -42,7 +44,7 @@ export default function ProfileScreen() {
         </View>
         <Text style={styles.profileName}>Alex Stratos</Text>
         <View style={styles.profileMeta}>
-          <Text style={styles.profileRole}>Pro Trader</Text>
+          <Text style={styles.profileRole}>Market Analyst</Text>
           <Text style={styles.profileDot}>•</Text>
           <Text style={styles.profileStatus}>Verified Account</Text>
         </View>
@@ -81,7 +83,7 @@ export default function ProfileScreen() {
               <Text style={styles.listSubtitle}>Google Authenticator Active</Text>
             </View>
           </View>
-          <Switch value={twoFactor} onValueChange={setTwoFactor} thumbColor="white" trackColor={{ true: COLORS.primary, false: '#1c221c' }} />
+          <Switch value={twoFactor} onValueChange={setTwoFactor} thumbColor="#ffffff" trackColor={{ true: COLORS.primary, false: COLORS.border }} />
         </View>
         <View style={styles.listRow}>
           <View style={styles.listLeft}>
@@ -93,53 +95,7 @@ export default function ProfileScreen() {
               <Text style={styles.listSubtitle}>Face ID Enabled</Text>
             </View>
           </View>
-          <Switch value={biometric} onValueChange={setBiometric} thumbColor="white" trackColor={{ true: COLORS.primary, false: '#1c221c' }} />
-        </View>
-      </View>
-
-      <Text style={styles.sectionHeading}>Trading Preferences</Text>
-      <View style={styles.listCard}>
-        <View style={styles.preferenceBlock}>
-          <View style={styles.preferenceRow}>
-            <Text style={styles.listTitle}>Default Leverage Limit</Text>
-            <Text style={styles.preferenceValue}>25x</Text>
-          </View>
-          <View style={styles.sliderTrack}>
-            <View style={styles.sliderFill} />
-          </View>
-          <View style={styles.sliderLabels}>
-            {['1X', '10X', '25X', '50X', '100X'].map((label) => (
-              <Text key={label} style={styles.sliderLabel}>{label}</Text>
-            ))}
-          </View>
-        </View>
-        <View style={styles.listRow}>
-          <View style={styles.listLeft}>
-            <View style={styles.listIcon}>
-              <MaterialIcons name="bolt" size={18} color={COLORS.primary} />
-            </View>
-            <View>
-              <Text style={styles.listTitle}>One-Tap Trading</Text>
-              <Text style={styles.listSubtitle}>Skip confirmation dialogs</Text>
-            </View>
-          </View>
-          <Switch value={oneTap} onValueChange={setOneTap} thumbColor="white" trackColor={{ true: COLORS.primary, false: '#1c221c' }} />
-        </View>
-        <View style={styles.listRow}>
-          <View style={styles.listLeft}>
-            <View style={styles.listIcon}>
-              <MaterialIcons name="swap-horiz" size={18} color={COLORS.primary} />
-            </View>
-            <Text style={styles.listTitle}>Default Order Type</Text>
-          </View>
-          <View style={styles.segmented}>
-            <View style={styles.segmentActive}>
-              <Text style={styles.segmentActiveText}>MARKET</Text>
-            </View>
-            <View style={styles.segmentInactive}>
-              <Text style={styles.segmentInactiveText}>LIMIT</Text>
-            </View>
-          </View>
+          <Switch value={biometric} onValueChange={setBiometric} thumbColor="#ffffff" trackColor={{ true: COLORS.primary, false: COLORS.border }} />
         </View>
       </View>
 
@@ -152,16 +108,16 @@ export default function ProfileScreen() {
             </View>
             <Text style={styles.listTitle}>Price Volatility Alerts</Text>
           </View>
-          <Switch value={alerts} onValueChange={setAlerts} thumbColor="white" trackColor={{ true: COLORS.primary, false: '#1c221c' }} />
+          <Switch value={alerts} onValueChange={setAlerts} thumbColor="#ffffff" trackColor={{ true: COLORS.primary, false: COLORS.border }} />
         </View>
         <View style={styles.listRow}>
           <View style={styles.listLeft}>
             <View style={styles.listIcon}>
               <MaterialIcons name="receipt-long" size={18} color={COLORS.primary} />
             </View>
-            <Text style={styles.listTitle}>Execution Reports</Text>
+            <Text style={styles.listTitle}>Market Reports</Text>
           </View>
-          <Switch value={reports} onValueChange={setReports} thumbColor="white" trackColor={{ true: COLORS.primary, false: '#1c221c' }} />
+          <Switch value={reports} onValueChange={setReports} thumbColor="#ffffff" trackColor={{ true: COLORS.primary, false: COLORS.border }} />
         </View>
       </View>
 
@@ -196,22 +152,26 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.06)'
+    borderBottomColor: COLORS.border
   },
   backButton: {
     width: 40,
     height: 40,
+    borderRadius: 14,
+    backgroundColor: COLORS.soft,
     alignItems: 'center',
     justifyContent: 'center'
   },
   topTitle: {
-    color: 'white',
+    color: COLORS.text,
     fontSize: 16,
     fontFamily: 'Manrope_700Bold'
   },
   settingsButton: {
     width: 40,
     height: 40,
+    borderRadius: 14,
+    backgroundColor: COLORS.soft,
     alignItems: 'center',
     justifyContent: 'center'
   },
@@ -226,7 +186,7 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 60,
     borderWidth: 2,
-    borderColor: 'rgba(13,242,13,0.3)',
+    borderColor: 'rgba(14, 165, 233, 0.3)',
     alignItems: 'center',
     justifyContent: 'center'
   },
@@ -249,7 +209,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.background
   },
   profileName: {
-    color: 'white',
+    color: COLORS.text,
     fontSize: 20,
     fontFamily: 'Manrope_700Bold'
   },
@@ -265,14 +225,14 @@ const styles = StyleSheet.create({
     fontFamily: 'Manrope_600SemiBold'
   },
   profileDot: {
-    color: 'rgba(13,242,13,0.5)'
+    color: COLORS.muted
   },
   profileStatus: {
-    color: 'rgba(13,242,13,0.7)',
+    color: COLORS.muted,
     fontSize: 12
   },
   profileUid: {
-    color: 'rgba(13,242,13,0.5)',
+    color: COLORS.muted,
     fontSize: 11
   },
   editButton: {
@@ -283,7 +243,7 @@ const styles = StyleSheet.create({
     marginTop: 8
   },
   editText: {
-    color: '#0a0f0a',
+    color: '#ffffff',
     fontFamily: 'Manrope_700Bold'
   },
   statsRow: {
@@ -298,10 +258,10 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)'
+    borderColor: COLORS.border
   },
   statLabel: {
-    color: 'rgba(13,242,13,0.7)',
+    color: COLORS.muted,
     fontSize: 10,
     textTransform: 'uppercase',
     fontFamily: 'Manrope_700Bold'
@@ -313,7 +273,7 @@ const styles = StyleSheet.create({
     marginTop: 6
   },
   statValue: {
-    color: 'white',
+    color: COLORS.text,
     fontSize: 18,
     fontFamily: 'Manrope_700Bold'
   },
@@ -334,10 +294,10 @@ const styles = StyleSheet.create({
   },
   listCard: {
     marginHorizontal: 16,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: COLORS.border,
     overflow: 'hidden'
   },
   listRow: {
@@ -346,7 +306,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.04)'
+    borderBottomColor: COLORS.border
   },
   listLeft: {
     flexDirection: 'row',
@@ -357,17 +317,17 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: 'rgba(13,242,13,0.1)',
+    backgroundColor: 'rgba(14, 165, 233, 0.12)',
     alignItems: 'center',
     justifyContent: 'center'
   },
   listTitle: {
-    color: 'white',
+    color: COLORS.text,
     fontSize: 14,
     fontFamily: 'Manrope_600SemiBold'
   },
   listSubtitle: {
-    color: 'rgba(13,242,13,0.6)',
+    color: COLORS.muted,
     fontSize: 11
   },
   preferenceBlock: {
@@ -459,11 +419,11 @@ const styles = StyleSheet.create({
     opacity: 0.5
   },
   footerText: {
-    color: 'white',
+    color: COLORS.muted,
     fontSize: 12
   },
   footerTextSmall: {
-    color: 'white',
+    color: COLORS.muted,
     fontSize: 10
   }
 });

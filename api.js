@@ -1,4 +1,17 @@
+import { Platform } from 'react-native';
+
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const DEFAULT_BASE_URL = Platform.OS === 'android' ? 'http://10.0.2.2:4000' : 'http://localhost:4000';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || DEFAULT_BASE_URL;
+
+const requestJson = async (path) => {
+  const response = await fetch(`${API_BASE_URL}${path}`);
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status}`);
+  }
+  return response.json();
+};
 
 const createSparkline = (base) => {
   const points = 12;
@@ -18,69 +31,58 @@ export const api = {
     return { success: true, user: { name: "Alex Stratos", id: "8829", email } };
   },
 
-  getStocks: async () => {
-    await delay(400);
-    const base = [175.22, 189.42, 875.28, 64231.2, 312.8, 421.4];
-    return [
-      { symbol: "TSLA", name: "Tesla Motors", price: 175.22, changePercent: 2.41 },
-      { symbol: "AAPL", name: "Apple Inc.", price: 189.42, changePercent: -1.24 },
-      { symbol: "NVDA", name: "NVIDIA Corp.", price: 875.28, changePercent: 4.12 },
-      { symbol: "BTC", name: "Bitcoin", price: 64231.2, changePercent: 1.89 },
-      { symbol: "MSFT", name: "Microsoft", price: 412.33, changePercent: 0.85 },
-      { symbol: "META", name: "Meta Platforms", price: 312.8, changePercent: -0.62 }
-    ].map((stock, index) => ({
-      ...stock,
-      sparkline: createSparkline(base[index] || stock.price)
-    }));
+  getIndices: async () => {
+    try {
+      const payload = await requestJson('/api/indices');
+      return payload.data || [];
+    } catch (error) {
+      await delay(200);
+      return [];
+    }
   },
 
-  getPortfolio: async () => {
-    await delay(500);
-    return {
-      balance: 248192.45,
-      profitLoss: 1240.5,
-      profitLossPercent: 4.2
-    };
+  getStocks: async (symbols = []) => {
+    try {
+      const query = symbols.length ? `?symbols=${symbols.join(',')}` : '';
+      const payload = await requestJson(`/api/stocks${query}`);
+      const base = [175.22, 189.42, 875.28, 64231.2, 312.8, 421.4];
+      return (payload.data || []).map((stock, index) => ({
+        ...stock,
+        sparkline: createSparkline(base[index] || stock.price || 100)
+      }));
+    } catch (error) {
+      await delay(200);
+      return [];
+    }
+  },
+
+  getHeatmap: async () => {
+    try {
+      const payload = await requestJson('/api/heatmap');
+      return payload.data || [];
+    } catch (error) {
+      await delay(200);
+      return [];
+    }
+  },
+
+  getMutualFunds: async () => {
+    try {
+      const payload = await requestJson('/api/mutual-funds');
+      return payload.data || [];
+    } catch (error) {
+      await delay(200);
+      return [];
+    }
   },
 
   getNews: async () => {
-    await delay(500);
-    return [
-      {
-        id: 1,
-        title: "Fed signals potential rate cut as inflation cools",
-        source: "Bloomberg",
-        time: "12m ago",
-        sentiment: "bullish",
-        category: "Macro",
-        imageUrl: "https://picsum.photos/seed/market/700/400"
-      },
-      {
-        id: 2,
-        title: "AI chip demand lifts mega-cap tech earnings",
-        source: "Reuters",
-        time: "45m ago",
-        sentiment: "bullish",
-        category: "Tech",
-        imageUrl: "https://picsum.photos/seed/ai/700/400"
-      },
-      {
-        id: 3,
-        title: "Crypto volatility spikes as regulation chatter grows",
-        source: "CoinDesk",
-        time: "2h ago",
-        sentiment: "bearish",
-        category: "Crypto",
-        imageUrl: "https://picsum.photos/seed/crypto/700/400"
-      }
-    ];
-  },
-
-  executeTrade: async () => {
-    await delay(900);
-    return {
-      success: true,
-      transactionId: `TX-${Math.random().toString(36).substring(2, 10).toUpperCase()}`
-    };
+    try {
+      const payload = await requestJson('/api/news');
+      return payload.data || [];
+    } catch (error) {
+      await delay(200);
+      return [];
+    }
   }
 };
