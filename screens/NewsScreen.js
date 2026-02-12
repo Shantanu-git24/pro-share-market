@@ -32,38 +32,49 @@ const defaultTrendingTickers = [
   { symbol: '$ETH', change: '+2.1%', tone: COLORS.bullish }
 ];
 
-const defaultNewsCards = [
-  {
-    id: 1,
-    title: 'US Labor Market Shows Resilience with Unexpected Job Gains',
-    category: 'Macro Analysis',
-    time: '12m ago',
-    sentiment: 'bullish',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAaqTDPHXhYYWbMUx0KBA6WBpOKYs1IDhNg1MfmkDtP1ia_yzbEloLsgBGvhlDCqroD5RDjvRL78mL94SRm1gpMj2bdb1jyMjY-7jhqCE6ZBGaH9JJ5PqP5vemBjoySbwjZOXmEviBo962BFGKsR_h5KSz6RxKGCnBoNBvNLyWqertOEW14AKKDycXD0lUihZpOnkwHPKrEcMtAiPcYOIvBZxJHWQXPkl3aGb5k5I8VkBdf9-i1KYurp5H1WuPRmr0nwKcIUBuWdK0',
-    source: 'Bloomberg Finance'
-  },
-  {
-    id: 2,
-    title: 'Regulatory Scrutiny Intensifies for Major Offshore Exchanges',
-    category: 'Crypto News',
-    time: '45m ago',
-    sentiment: 'bearish',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBnOzIbb8KsZGYPaz77bGuv75yHTJBdC8lte_jZ8gaCF58yJ71EK25eKXTqhlc3dnvWgOqg9zR7jEwV0C_fuXCsNBmdyebiE5cUfF8JRYzvTxK_fsQs3RjI5di4XB_-zv7vGiCMfE4nfF9H1AZ9mbUWdsVxRMokuLrxGKVkpSFtFA0xZxn_gRlRmoAcF_27nlQDyTygg2aFYLv6d7ubuiNWc_PV2oUyTMh53M-7k8uw5DqIRDqQQP5-yw7RSPJOM9_A3mMb3Pu-sWE',
-    source: 'CoinDesk'
-  }
-];
 
 const defaultTrendingMentions = [
   { rank: '01', symbol: '$NVDA', mentions: '2.4k Mentions/hr', change: '+5.42%', bar: 0.75, tone: COLORS.bullish },
   { rank: '02', symbol: '$AAPL', mentions: '1.8k Mentions/hr', change: '-0.85%', bar: 0.4, tone: COLORS.bearish }
 ];
 
+const categoryTabs = [
+  { label: 'All News', key: 'all' },
+  { label: '#Crypto', key: 'crypto' },
+  { label: '#Tech', key: 'tech' },
+  { label: '#Macro', key: 'macro' },
+  { label: '#Forex', key: 'forex' }
+];
+
+const matchesCategory = (item, key) => {
+  if (key === 'all') {
+    return true;
+  }
+
+  const text = `${item.category || ''} ${item.title || ''}`.toLowerCase();
+  if (key === 'crypto') {
+    return text.includes('crypto') || text.includes('bitcoin') || text.includes('btc') || text.includes('ethereum');
+  }
+  if (key === 'tech') {
+    return text.includes('tech') || text.includes('it') || text.includes('ai') || text.includes('software');
+  }
+  if (key === 'macro') {
+    return text.includes('macro') || text.includes('rates') || text.includes('inflation') || text.includes('rbi');
+  }
+  if (key === 'forex') {
+    return text.includes('forex') || text.includes('usd') || text.includes('inr') || text.includes('currency');
+  }
+
+  return true;
+};
+
 export default function NewsScreen() {
   const [stories] = useState(defaultStories);
   const [trendingTickers, setTrendingTickers] = useState(defaultTrendingTickers);
-  const [newsCards, setNewsCards] = useState(defaultNewsCards);
+  const [newsCards, setNewsCards] = useState([]);
   const [trendingMentions, setTrendingMentions] = useState(defaultTrendingMentions);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeCategory, setActiveCategory] = useState('all');
 
   const loadData = React.useCallback(async () => {
     const [newsData, stocksData] = await Promise.all([
@@ -73,7 +84,7 @@ export default function NewsScreen() {
 
     if (newsData.length) {
       setNewsCards(
-        newsData.slice(0, 6).map((item, index) => ({
+        newsData.map((item, index) => ({
           id: item.id || `news-${index}`,
           title: item.title,
           category: item.category || 'Market',
@@ -83,6 +94,8 @@ export default function NewsScreen() {
           source: item.source
         }))
       );
+    } else {
+      setNewsCards([]);
     }
 
     if (stocksData.length) {
@@ -122,6 +135,8 @@ export default function NewsScreen() {
       loadData();
     }, [loadData])
   );
+
+  const filteredNews = newsCards.filter((item) => matchesCategory(item, activeCategory));
 
   return (
     <Screen style={styles.root}>
@@ -176,15 +191,27 @@ export default function NewsScreen() {
       </ScrollView>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryRow}>
-        {['All News', '#Crypto', '#Tech', '#Macro', '#Forex'].map((category, index) => (
-          <View key={category} style={[styles.categoryChip, index === 0 && styles.categoryChipActive]}>
-            <Text style={[styles.categoryText, index === 0 && styles.categoryTextActive]}>{category}</Text>
-          </View>
-        ))}
+        {categoryTabs.map((category) => {
+          const isActive = category.key === activeCategory;
+          return (
+            <Pressable
+              key={category.key}
+              style={[styles.categoryChip, isActive && styles.categoryChipActive]}
+              onPress={() => setActiveCategory(category.key)}
+            >
+              <Text style={[styles.categoryText, isActive && styles.categoryTextActive]}>{category.label}</Text>
+            </Pressable>
+          );
+        })}
       </ScrollView>
 
       <View style={styles.newsList}>
-        {newsCards.map((item) => (
+        {filteredNews.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>No news available</Text>
+            <Text style={styles.emptyBody}>Connect the news API or refresh to pull the latest feed.</Text>
+          </View>
+        ) : filteredNews.map((item) => (
           <View key={item.id} style={styles.newsCard}>
             <Image source={{ uri: item.image }} style={styles.newsImage} />
             <View style={[styles.sentimentTag, item.sentiment === 'bullish' ? styles.tagBullish : styles.tagBearish]}>
@@ -409,6 +436,23 @@ const styles = StyleSheet.create({
   newsList: {
     paddingHorizontal: 16,
     gap: 16
+  },
+  emptyState: {
+    padding: 18,
+    borderRadius: 16,
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border
+  },
+  emptyTitle: {
+    color: COLORS.text,
+    fontSize: 14,
+    fontFamily: 'Manrope_700Bold'
+  },
+  emptyBody: {
+    color: COLORS.muted,
+    fontSize: 12,
+    marginTop: 6
   },
   newsCard: {
     borderRadius: 18,

@@ -9,7 +9,8 @@ app.use(cors());
 app.use(express.json());
 
 const PORT = Number(process.env.PORT || 4000);
-const ALPHA_VANTAGE_API_KEY = process.env.ALPHA_VANTAGE_API_KEY || '';
+const INDIAN_API_KEY = process.env.INDIAN_API_KEY || '';
+const INDIAN_API_BASE_URL = 'https://stock.indianapi.in';
 
 const NSE_BASE_URL = 'https://www.nseindia.com';
 const NSE_HEADERS = {
@@ -58,6 +59,26 @@ const fetchJson = async (url) => {
   return payload;
 };
 
+const indianApiFetchJson = async (path) => {
+  if (!INDIAN_API_KEY) {
+    throw new Error('Missing IndianAPI key');
+  }
+  const response = await fetch(`${INDIAN_API_BASE_URL}${path}`, {
+    headers: {
+      'Accept': 'application/json',
+      'X-API-Key': INDIAN_API_KEY
+    }
+  });
+  if (!response.ok) {
+    throw new Error(`IndianAPI request failed: ${response.status}`);
+  }
+  const payload = await safeJson(response);
+  if (!payload) {
+    throw new Error('Invalid IndianAPI JSON payload');
+  }
+  return payload;
+};
+
 const refreshNseCookie = async () => {
   const response = await fetch(NSE_BASE_URL, { headers: NSE_HEADERS });
   const setCookie = response.headers.get('set-cookie');
@@ -98,26 +119,16 @@ const nseFetchJson = async (path) => {
   return payload;
 };
 
-const alphaQuote = async (symbol) => {
-  if (!ALPHA_VANTAGE_API_KEY) {
-    throw new Error('Missing Alpha Vantage API key');
+const toNumber = (value) => {
+  if (value === null || value === undefined) {
+    return 0;
   }
-  const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(symbol)}&apikey=${ALPHA_VANTAGE_API_KEY}`;
-  const payload = await fetchJson(url);
-  const quote = payload['Global Quote'];
-  if (!quote || !quote['05. price']) {
-    throw new Error(`No data for ${symbol}`);
+  if (typeof value === 'number') {
+    return value;
   }
-  return {
-    symbol: quote['01. symbol'],
-    price: Number(quote['05. price']),
-    change: Number(quote['09. change']),
-    changePercent: Number(String(quote['10. change percent']).replace('%', '')),
-    open: Number(quote['02. open']),
-    high: Number(quote['03. high']),
-    low: Number(quote['04. low']),
-    volume: Number(quote['06. volume'])
-  };
+  const normalized = String(value).replace(/,/g, '').trim();
+  const parsed = Number(normalized);
+  return Number.isNaN(parsed) ? 0 : parsed;
 };
 
 const timeAgo = (timestamp) => {
@@ -134,11 +145,11 @@ const timeAgo = (timestamp) => {
   return `${days}d ago`;
 };
 
-const parseAlphaTime = (value) => {
+const parseTimeValue = (value) => {
   if (!value) {
     return now();
   }
-  const normalized = value.replace('T', ' ').replace('Z', '');
+  const normalized = String(value).replace('T', ' ').replace('Z', '');
   const date = new Date(normalized);
   if (Number.isNaN(date.getTime())) {
     return now();
@@ -192,7 +203,7 @@ const fallbackStocks = STOCK_SYMBOLS.map((item) => ({
 const fallbackNews = [
   {
     id: 'fallback-1',
-    title: 'Live news feed will appear once API key is configured.',
+    title: 'Live news feed will appear once the IndianAPI key is configured.',
     source: 'Market Center',
     time: 'Now',
     sentiment: 'bullish',
@@ -203,6 +214,67 @@ const fallbackNews = [
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, timestamp: now() });
+});
+
+app.get('/api/debug/indianapi', async (_req, res) => {
+  try {
+    const [stockPayload, heatmapPayload, newsPayload] = await Promise.all([
+      indianApiFetchJson('/stock?name=Reliance'),
+      indianApiFetchJson('/NSE_most_active'),
+      indianApiFetchJson('/news')
+    ]);
+
+    const heatmapList = Array.isArray(heatmapPayload) ? heatmapPayload : heatmapPayload?.data || [];
+    const newsList = Array.isArray(newsPayload) ? newsPayload : newsPayload?.data || newsPayload?.news || [];
+
+    res.json({
+      ok: true,
+      stock: {
+        tickerId: stockPayload?.tickerId || null,
+        companyName: stockPayload?.companyName || null,
+        price: stockPayload?.currentPrice?.NSE || stockPayload?.currentPrice?.BSE || stockPayload?.currentPrice || null
+      },
+      heatmap: {
+        count: heatmapList.length,
+        sample: heatmapList[0] || null
+      },
+      news: {
+        count: newsList.length,
+        sample: newsList[0] || null
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+app.get('/api/debug/indices', async (_req, res) => {
+  try {
+    const payload = await nseFetchJson('/api/allIndices');
+    const list = payload?.data || [];
+    const bySymbol = new Map(list.map((item) => [item.indexSymbol, item]));
+
+    const summarize = (symbol) => {
+      const entry = bySymbol.get(symbol);
+      return entry
+        ? {
+          symbol,
+          last: entry.last,
+          variation: entry.variation,
+          percentChange: entry.percentChange
+        }
+        : null;
+    };
+
+    res.json({
+      ok: true,
+      nifty: summarize('NIFTY 50'),
+      bankNifty: summarize('NIFTY BANK'),
+      sensex: summarize('SENSEX')
+    });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
 });
 
 app.get('/api/indices', async (_req, res) => {
@@ -271,22 +343,21 @@ app.get('/api/stocks', async (req, res) => {
     const data = await getCached(`stocks:${symbols.map((item) => item.symbol).join(',')}`, 60 * 1000, async () => {
       const quotes = [];
       for (const item of symbols) {
-        const payload = await nseFetchJson(`/api/quote-equity?symbol=${encodeURIComponent(item.symbol)}`);
-        const priceInfo = payload?.priceInfo || {};
-        const info = payload?.info || {};
-        const change = Number(priceInfo.change || 0);
-        const changePercent = Number(priceInfo.pChange || 0);
+        const payload = await indianApiFetchJson(`/stock?name=${encodeURIComponent(item.symbol)}`);
+        const price = toNumber(payload?.currentPrice?.NSE || payload?.currentPrice?.BSE || payload?.currentPrice || payload?.price);
+        const changePercent = toNumber(payload?.percentChange || payload?.percent_change);
+        const change = price && changePercent ? (price * changePercent) / 100 : toNumber(payload?.netChange || payload?.net_change || payload?.change);
         quotes.push({
-          symbol: item.symbol,
-          name: info.companyName || item.name,
-          price: Number(priceInfo.lastPrice || 0),
+          symbol: payload?.tickerId || item.symbol,
+          name: payload?.companyName || item.name,
+          price,
           change,
           changePercent,
-          open: Number(priceInfo.open || 0),
-          high: Number(priceInfo.intraDayHighLow?.max || priceInfo.dayHigh || 0),
-          low: Number(priceInfo.intraDayHighLow?.min || priceInfo.dayLow || 0),
-          volume: Number(priceInfo.totalTradedVolume || 0),
-          source: 'nse'
+          open: toNumber(payload?.stockTechnicalData?.open || payload?.open),
+          high: toNumber(payload?.stockTechnicalData?.dayHigh || payload?.high),
+          low: toNumber(payload?.stockTechnicalData?.dayLow || payload?.low),
+          volume: toNumber(payload?.stockTechnicalData?.volume || payload?.volume),
+          source: 'indianapi'
         });
       }
       return quotes;
@@ -300,20 +371,16 @@ app.get('/api/stocks', async (req, res) => {
 app.get('/api/heatmap', async (_req, res) => {
   try {
     const data = await getCached('heatmap', 60 * 1000, async () => {
-      const quotes = [];
-      for (const item of STOCK_SYMBOLS) {
-        const payload = await nseFetchJson(`/api/quote-equity?symbol=${encodeURIComponent(item.symbol)}`);
-        const priceInfo = payload?.priceInfo || {};
-        quotes.push({
-          symbol: item.symbol,
-          name: item.name,
-          changePercent: Number(priceInfo.pChange || 0),
-          change: Number(priceInfo.change || 0),
-          price: Number(priceInfo.lastPrice || 0),
-          source: 'nse'
-        });
-      }
-      return quotes;
+      const payload = await indianApiFetchJson('/NSE_most_active');
+      const list = Array.isArray(payload) ? payload : payload?.data || [];
+      return list.slice(0, 8).map((item) => ({
+        symbol: String(item.ticker || item.symbol || '').replace('.NS', ''),
+        name: item.company || item.company_name || item.name,
+        changePercent: toNumber(item.percent_change || item.percentChange),
+        change: toNumber(item.net_change || item.netChange),
+        price: toNumber(item.price),
+        source: 'indianapi'
+      }));
     });
     res.json({ data });
   } catch (error) {
@@ -379,22 +446,25 @@ app.get('/api/mutual-funds', async (_req, res) => {
 app.get('/api/news', async (_req, res) => {
   try {
     const data = await getCached('news', 5 * 60 * 1000, async () => {
-      if (!ALPHA_VANTAGE_API_KEY) {
+      const payload = await indianApiFetchJson('/news');
+      const list = Array.isArray(payload) ? payload : payload?.data || payload?.news || [];
+      if (!list.length) {
         return fallbackNews;
       }
-      const url = `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers=RELIANCE.BSE,TCS.BSE,HDFCBANK.BSE&apikey=${ALPHA_VANTAGE_API_KEY}`;
-      const payload = await fetchJson(url);
-      const feed = payload?.feed || [];
-      return feed.slice(0, 8).map((item, index) => {
-        const publishedAt = parseAlphaTime(item.time_published);
+      return list.slice(0, 8).map((item, index) => {
+        const title = item.title || item.headline || item.news_title || 'Market update';
+        const source = item.source || item.publisher || item.source_name || 'Market News';
+        const published = item.published_at || item.published || item.date || item.time;
+        const publishedAt = parseTimeValue(published);
+        const sentimentLabel = String(item.sentiment || item.overall_sentiment || '').toLowerCase();
         return {
-          id: item.id || `alpha-${index}`,
-          title: item.title,
-          source: item.source,
+          id: item.id || item.news_id || `indian-${index}`,
+          title,
+          source,
           time: timeAgo(publishedAt),
-          sentiment: item.overall_sentiment_label?.toLowerCase().includes('bear') ? 'bearish' : 'bullish',
-          category: item.topics?.[0]?.topic || 'Market',
-          imageUrl: item.banner_image || 'https://picsum.photos/seed/market/700/400'
+          sentiment: sentimentLabel.includes('bear') ? 'bearish' : 'bullish',
+          category: item.category || item.topic || item.tags?.[0] || 'Market',
+          imageUrl: item.image || item.imageUrl || item.banner_image || 'https://picsum.photos/seed/market/700/400'
         };
       });
     });
