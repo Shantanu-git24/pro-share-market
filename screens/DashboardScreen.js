@@ -50,7 +50,7 @@ const defaultTopGainers = [
   }
 ];
 
-const metals = [
+const defaultCommodities = [
   {
     label: 'Gold 24K',
     value: '₹62,450',
@@ -70,6 +70,34 @@ const metals = [
     icon: 'diamond'
   }
 ];
+
+const commodityIcon = (name) => {
+  const key = String(name || '').toLowerCase();
+  if (key.includes('gold')) {
+    return 'stars';
+  }
+  if (key.includes('silver')) {
+    return 'diamond';
+  }
+  if (key.includes('oil') || key.includes('crude')) {
+    return 'local-gas-station';
+  }
+  if (key.includes('gas')) {
+    return 'whatshot';
+  }
+  return 'grain';
+};
+
+const commodityAccent = (name) => {
+  const key = String(name || '').toLowerCase();
+  if (key.includes('gold')) {
+    return COLORS.gold;
+  }
+  if (key.includes('silver')) {
+    return '#94a3b8';
+  }
+  return COLORS.primary;
+};
 
 const defaultFunds = [
   {
@@ -173,14 +201,16 @@ export default function DashboardScreen() {
   const [topGainers, setTopGainers] = useState(defaultTopGainers);
   const [funds, setFunds] = useState(defaultFunds);
   const [newsItemsLive, setNewsItemsLive] = useState(newsItems);
+  const [commodities, setCommodities] = useState(defaultCommodities);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadData = React.useCallback(async () => {
-    const [indicesData, stocksData, fundsData, newsData] = await Promise.all([
+    const [indicesData, stocksData, fundsData, newsData, commoditiesData] = await Promise.all([
       api.getIndices(),
       api.getStocks(),
       api.getMutualFunds(),
-      api.getNews()
+      api.getNews(),
+      api.getCommodities()
     ]);
 
     if (indicesData.length) {
@@ -234,6 +264,24 @@ export default function DashboardScreen() {
           time: item.time,
           tag: item.category || 'Market'
         }))
+      );
+    }
+
+    if (commoditiesData.length) {
+      setCommodities(
+        commoditiesData.slice(0, 2).map((item, index) => {
+          const label = item.name || item.symbol || `Commodity ${index + 1}`;
+          const accent = commodityAccent(label);
+          return {
+            label,
+            value: `₹${formatNumber(item.price, 2)}`,
+            unit: item.unit || 'Per Contract',
+            change: `${item.changePercent >= 0 ? '+' : ''}${formatNumber(item.changePercent, 2)}%`,
+            up: item.changePercent >= 0,
+            accent,
+            icon: commodityIcon(label)
+          };
+        })
       );
     }
   }, []);
@@ -511,8 +559,8 @@ export default function DashboardScreen() {
           <Text style={styles.sectionMeta}>Live MCX</Text>
         </View>
         <View style={styles.metalGrid}>
-          {metals.map((metal) => (
-            <View key={metal.label} style={styles.metalCard}>
+          {commodities.map((metal, index) => (
+            <View key={`${metal.label}-${index}`} style={styles.metalCard}>
               <View style={[styles.metalIconWrap, { backgroundColor: `${metal.accent}1A` }]}
               >
                 <MaterialIcons name={metal.icon} size={28} color={metal.accent} />

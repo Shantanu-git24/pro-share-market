@@ -76,6 +76,16 @@ export const api = {
     }
   },
 
+  getCommodities: async () => {
+    try {
+      const payload = await requestJson('/api/commodities');
+      return payload.data || [];
+    } catch (error) {
+      await delay(200);
+      return [];
+    }
+  },
+
   getNews: async () => {
     try {
       const payload = await requestJson('/api/news');

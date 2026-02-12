@@ -212,6 +212,27 @@ const fallbackNews = [
   }
 ];
 
+const fallbackCommodities = [
+  {
+    symbol: 'GOLD',
+    name: 'Gold',
+    price: 0,
+    change: 0,
+    changePercent: 0,
+    unit: 'Per 10 Grams',
+    source: 'fallback'
+  },
+  {
+    symbol: 'SILVER',
+    name: 'Silver',
+    price: 0,
+    change: 0,
+    changePercent: 0,
+    unit: 'Per 1 Kilogram',
+    source: 'fallback'
+  }
+];
+
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, timestamp: now() });
 });
@@ -395,6 +416,31 @@ app.get('/api/heatmap', async (_req, res) => {
     res.json({ data });
   } catch (error) {
     res.json({ data: fallbackStocks, error: error.message });
+  }
+});
+
+app.get('/api/commodities', async (_req, res) => {
+  try {
+    const data = await getCached('commodities', 5 * 60 * 1000, async () => {
+      const payload = await indianApiFetchJson('/commodities');
+      const list = Array.isArray(payload) ? payload : payload?.data || [];
+      return list.map((item) => {
+        const contractSize = toNumber(item.contractSize || item.contract_size);
+        const unit = item.priceUnit || item.price_unit;
+        return {
+          symbol: item.commoditySymbol || item.commodity_symbol || item.symbol || item.contractId,
+          name: item.commoditySymbol || item.commodity_symbol || item.symbol || 'Commodity',
+          price: toNumber(item.lastTradedPrice || item.last_traded_price || item.price),
+          change: toNumber(item.priceChange || item.price_change || item.change),
+          changePercent: toNumber(item.percentageChange || item.percentage_change || item.changePercent),
+          unit: contractSize && unit ? `Per ${contractSize} ${unit}` : unit || 'Per Contract',
+          source: 'indianapi'
+        };
+      });
+    });
+    res.json({ data });
+  } catch (error) {
+    res.json({ data: fallbackCommodities, error: error.message });
   }
 });
 
