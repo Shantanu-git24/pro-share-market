@@ -18,21 +18,12 @@ const COLORS = {
   soft: '#f1f5f9'
 };
 
-const defaultWatchlist = [
-  { symbol: 'RELIANCE', name: 'Reliance Industries', price: '₹2,945.30', change: '+1.24%', tone: COLORS.success, spark: 'M0,25 Q10,15 20,20 T40,10 T60,22 T80,5 T100,12' },
-  { symbol: 'HDFCBANK', name: 'HDFC Bank', price: '₹1,442.10', change: '-0.85%', tone: COLORS.danger, spark: 'M0,5 Q20,25 40,20 T70,28 T100,25' },
-  { symbol: 'TCS', name: 'Tata Consultancy Services', price: '₹3,912.45', change: '+0.82%', tone: COLORS.success, spark: 'M0,28 Q20,25 40,15 T60,10 T80,5 T100,2', highlight: true },
-  { symbol: 'INFY', name: 'Infosys', price: '₹1,568.12', change: '+0.45%', tone: COLORS.success, spark: 'M0,15 Q30,12 50,15 T100,14' },
-  { symbol: 'ICICIBANK', name: 'ICICI Bank', price: '₹1,112.45', change: '+1.88%', tone: COLORS.success, spark: 'M0,20 Q20,22 40,18 T70,10 T100,12' },
-  { symbol: 'SBIN', name: 'State Bank of India', price: '₹621.10', change: '-0.92%', tone: COLORS.danger, spark: 'M0,10 Q20,12 40,18 T70,25 T100,28' }
-];
-
 const buildSparkPath = (values) => {
   if (!values || !values.length) {
     return 'M0,20 L20,18 L40,22 L60,14 L80,18 L100,12';
   }
   if (values.length === 1) {
-    return `M0,15 L100,15`;
+    return 'M0,15 L100,15';
   }
   const max = Math.max(...values);
   const min = Math.min(...values);
@@ -46,30 +37,71 @@ const buildSparkPath = (values) => {
     .join(' ');
 };
 
+const sparkFromChange = (changePercent) => {
+  const base = 20;
+  const tilt = Math.max(-6, Math.min(6, Number(changePercent) || 0));
+  const points = [base + tilt * 0.2, base + tilt * 0.4, base + tilt * 0.6, base + tilt * 0.8, base + tilt];
+  return buildSparkPath(points);
+};
+
+const formatPrice = (value) => {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) {
+    return '--';
+  }
+  return Number(value).toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+};
+
+const timeAgo = (timestamp) => {
+  if (!timestamp) {
+    return 'Just now';
+  }
+  const seconds = Math.max(1, Math.floor((Date.now() - timestamp) / 1000));
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 1) {
+    return 'Just now';
+  }
+  if (minutes < 60) {
+    return `${minutes}m ago`;
+  }
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return `${hours}h ago`;
+  }
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+};
+
 export default function WatchlistScreen() {
   const navigation = useNavigation();
-  const [watchlist, setWatchlist] = useState(defaultWatchlist);
+  const [watchlist, setWatchlist] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
 
   const loadData = React.useCallback(async () => {
-    const stocksData = await api.getStocks();
-    if (!stocksData.length) {
+    const heatmapData = await api.getHeatmap();
+    if (!heatmapData.length) {
+      setWatchlist([]);
+      setLastUpdatedAt(Date.now());
       return;
     }
 
-    const updated = stocksData.slice(0, 6).map((stock, index) => {
+    const updated = heatmapData.slice(0, 6).map((stock, index) => {
       const change = Number(stock.changePercent || 0);
       return {
-        symbol: String(stock.symbol).replace('.BSE', ''),
+        symbol: String(stock.symbol || '').replace('.NS', '').replace('.BSE', ''),
         name: stock.name || stock.symbol,
-        price: `₹${Number(stock.price).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        price: `₹${formatPrice(stock.price)}`,
         change: `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`,
         tone: change >= 0 ? COLORS.success : COLORS.danger,
-        spark: buildSparkPath(stock.sparkline),
+        spark: sparkFromChange(change),
         highlight: index === 0
       };
     });
     setWatchlist(updated);
+    setLastUpdatedAt(Date.now());
   }, []);
 
   const onRefresh = React.useCallback(async () => {
@@ -99,7 +131,7 @@ export default function WatchlistScreen() {
         <View style={styles.header}>
           <View>
             <Text style={styles.headerTitle}>Watchlist</Text>
-            <Text style={styles.headerSubtitle}>Updated 2 mins ago</Text>
+            <Text style={styles.headerSubtitle}>Updated {timeAgo(lastUpdatedAt)}</Text>
           </View>
           <View style={styles.headerRight}>
             <Pressable style={styles.iconButton}>
@@ -121,7 +153,12 @@ export default function WatchlistScreen() {
         </ScrollView>
 
         <View style={styles.grid}>
-          {watchlist.map((item) => (
+          {watchlist.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyTitle}>No live data yet</Text>
+              <Text style={styles.emptyBody}>Pull to refresh once the market feed is available.</Text>
+            </View>
+          ) : watchlist.map((item) => (
             <Pressable
               key={item.symbol}
               style={[styles.card, item.highlight && styles.cardHighlight]}
@@ -134,8 +171,8 @@ export default function WatchlistScreen() {
                 </View>
                 <MaterialIcons name="drag-indicator" size={16} color={item.highlight ? COLORS.primary : COLORS.muted} />
               </View>
-              <Svg width="100%" height="50" viewBox="0 0 100 30" style={styles.sparkline}>
-                <Path d={item.spark} stroke={item.tone} strokeWidth="2" fill="none" strokeLinecap="round" />
+              <Svg width="100%" height="64" viewBox="0 0 100 40" style={styles.sparkline}>
+                <Path d={item.spark} stroke={item.tone} strokeWidth="3" fill="none" strokeLinecap="round" />
                 {item.highlight ? <Circle cx="100" cy="2" r="2" fill={item.tone} /> : null}
               </Svg>
               <View style={styles.cardFooter}>
@@ -229,6 +266,24 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 12
   },
+  emptyState: {
+    width: '100%',
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: COLORS.border
+  },
+  emptyTitle: {
+    color: COLORS.text,
+    fontSize: 13,
+    fontFamily: 'Manrope_700Bold'
+  },
+  emptyBody: {
+    color: COLORS.muted,
+    fontSize: 11,
+    marginTop: 6
+  },
   card: {
     width: '48%',
     borderRadius: 16,
@@ -258,7 +313,11 @@ const styles = StyleSheet.create({
     fontFamily: 'Manrope_700Bold'
   },
   sparkline: {
-    marginVertical: 8
+    marginVertical: 10,
+    height: 64,
+    backgroundColor: COLORS.soft,
+    borderRadius: 10,
+    padding: 6
   },
   cardFooter: {
     flexDirection: 'row',

@@ -248,6 +248,16 @@ app.get('/api/debug/indianapi', async (_req, res) => {
   }
 });
 
+app.get('/api/debug/stock', async (req, res) => {
+  try {
+    const name = String(req.query.name || 'RELIANCE');
+    const payload = await indianApiFetchJson(`/stock?name=${encodeURIComponent(name)}`);
+    res.json({ ok: true, name, payload });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
 app.get('/api/debug/indices', async (_req, res) => {
   try {
     const payload = await nseFetchJson('/api/allIndices');

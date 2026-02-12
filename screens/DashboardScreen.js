@@ -320,7 +320,15 @@ export default function DashboardScreen() {
 
         <View style={styles.quickActions}>
           {quickActions.map((action) => (
-            <Pressable key={action.label} style={styles.quickActionChip}>
+            <Pressable
+              key={action.label}
+              style={styles.quickActionChip}
+              onPress={() => {
+                if (action.label === 'Watchlist') {
+                  navigation.navigate('Watchlist');
+                }
+              }}
+            >
               <MaterialIcons name={action.icon} size={16} color={COLORS.primary} />
               <Text style={styles.quickActionText}>{action.label}</Text>
             </Pressable>
